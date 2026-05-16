@@ -1,0 +1,847 @@
+/* ========================================================================
+   Bagre — DokuWiki theme (clean, modern, functional)
+   ======================================================================== */
+
+/* Tokens — light */
+:root {
+  --brand-50:  #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
+
+  --bg-app:        #f8fafc;
+  --bg-surface:    #ffffff;
+  --bg-soft:       #f1f5f9;
+  --bg-header:     rgba(255, 255, 255, 0.85);
+  --bg-code-block: #0f172a;
+  --color-code-block: #e2e8f0;
+
+  --text:        #0f172a;
+  --text-soft:   #334155;
+  --text-muted:  #64748b;
+  --text-faint:  #94a3b8;
+
+  --border:        #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-strong: #cbd5e1;
+
+  --link:         #1d4ed8;
+  --link-hover:   #1e40af;
+
+  --amber-50: #fffbeb;
+  --amber-600: #d97706;
+  --rose-200: #fecdd3;
+  --rose-600: #e11d48;
+
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow:    0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 20px -8px rgba(15, 23, 42, 0.15);
+
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+
+  --sidebar-w: 264px;
+  --header-h:  60px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/* Tokens — dark */
+body.ipam-theme-dark {
+  --bg-app:        #0b1220;
+  --bg-surface:    #131b2d;
+  --bg-soft:       #1c2640;
+  --bg-header:     rgba(11, 18, 32, 0.85);
+  --bg-code-block: #050a16;
+  --color-code-block: #cbd5e1;
+
+  --text:        #f1f5f9;
+  --text-soft:   #cbd5e1;
+  --text-muted:  #94a3b8;
+  --text-faint:  #64748b;
+
+  --border:        #243049;
+  --border-subtle: #1c2640;
+  --border-strong: #2f3d5b;
+
+  --link:         #93c5fd;
+  --link-hover:   #bfdbfe;
+
+  --brand-50:  #1e293b;
+  --brand-100: rgba(59, 130, 246, 0.18);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow:    0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 20px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* ====================== Reset ====================== */
+html, body {
+  font-family: var(--font-sans) !important;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-soft);
+  background: var(--bg-app);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+* { box-sizing: border-box; }
+
+/* ====================== Esconde DokuWiki defaults ====================== */
+#dokuwiki__usertools,
+#dokuwiki__sitetools,
+#dokuwiki__pagetools,
+#dokuwiki__footer,
+.dokuwiki .breadcrumbs,
+.dokuwiki .youarehere,
+.dokuwiki .trace,
+.dokuwiki .docInfo,
+.dokuwiki .license,
+.dokuwiki .secedit,
+.licenseinfo,
+#dokuwiki__header .headings img,
+#dokuwiki__header img.logo,
+.headings .home img,
+.bar form#dw__search button {
+  display: none !important;
+}
+
+#dokuwiki__bar { background: transparent; border: none; padding: 0; margin: 0; }
+
+/* ====================== Layout ======================
+   Abandonei display:grid — colidia demais com o CSS legacy do template
+   dokuwiki (float+margin negativo em .showSidebar #dokuwiki__content,
+   width:75em em #dokuwiki__site, etc).
+
+   Usando agora layout clássico mas robusto:
+   - body sem max-width
+   - #dokuwiki__site/__top reset (full width, sem flex/grid/float)
+   - #dokuwiki__header: position fixed top
+   - #dokuwiki__aside: position fixed left, abaixo do header
+   - #dokuwiki__content: margin-left = sidebar-w, padding-top = header-h
+*/
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+  min-height: 100vh;
+}
+
+#dokuwiki__site,
+#dokuwiki__top,
+#dokuwiki__site > .site,
+#dokuwiki__top.site {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+  min-height: 100vh;
+  background: var(--bg-app) !important;
+  float: none !important;
+}
+
+/* Header fixo no topo */
+#dokuwiki__header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-h);
+  z-index: 50;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Sidebar fixo à esquerda */
+#dokuwiki__aside {
+  position: fixed !important;
+  top: var(--header-h);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  z-index: 40;
+  margin: 0 !important;
+  padding: 24px 14px !important;
+  max-width: var(--sidebar-w) !important;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  float: none !important;
+}
+
+/* Conteúdo principal: empurrado pra direita da sidebar e abaixo do header */
+.showSidebar #dokuwiki__content,
+#dokuwiki__content {
+  position: relative;
+  display: block !important;
+  float: none !important;
+  margin-left: var(--sidebar-w) !important;
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  padding: calc(var(--header-h) + 24px) 24px 32px !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 100vh;
+  background: var(--bg-app);
+  box-sizing: border-box;
+}
+
+.showSidebar #dokuwiki__content > .pad,
+#dokuwiki__content > .pad {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  float: none !important;
+}
+
+/* ====================== Header ====================== */
+#dokuwiki__header {
+  height: var(--header-h);
+  background: var(--bg-header);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+#dokuwiki__header > div.pad {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 24px;
+  gap: 14px;
+}
+
+#dokuwiki__header .headings {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+#dokuwiki__header .headings h1 {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+#dokuwiki__header .headings h1 a,
+#dokuwiki__header .headings h1 {
+  color: var(--text) !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+
+#dokuwiki__header .headings h1::before {
+  content: 'D';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-700) 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  border-radius: 9px;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15), 0 4px 12px -2px rgba(37, 99, 235, 0.45);
+}
+
+#dokuwiki__header .headings p { display: none; }
+
+/* Search */
+.bar form#dw__search { display: flex; align-items: center; margin-left: auto; }
+
+.bar form#dw__search input,
+form#dw__search input.edit {
+  background: var(--bg-soft) !important;
+  color: var(--text-soft) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius) !important;
+  padding: 8px 14px 8px 36px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  width: 280px;
+  transition: all 0.15s ease;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: 12px center !important;
+}
+
+.bar form#dw__search input:focus,
+form#dw__search input.edit:focus {
+  background-color: var(--bg-surface) !important;
+  border-color: var(--brand-300) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+  outline: none !important;
+}
+
+/* Hamburger + theme toggle */
+.ipam-menu-toggle,
+.ipam-theme-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  color: var(--text-soft);
+  transition: all 0.12s ease;
+  margin-left: 4px;
+}
+
+.ipam-theme-toggle { display: inline-flex; }
+
+.ipam-menu-toggle:hover,
+.ipam-theme-toggle:hover {
+  background: var(--bg-soft);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.ipam-theme-toggle svg { width: 16px; height: 16px; }
+
+/* ====================== Sidebar ====================== */
+#dokuwiki__aside {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 14px;
+  font-size: 13.5px;
+  overflow-y: auto;
+  position: sticky;
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+}
+
+/* Brand block (1º <p>) */
+#dokuwiki__aside .page > p:first-of-type {
+  margin: 0 8px 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  line-height: 1.35;
+}
+
+#dokuwiki__aside .page > p:first-of-type strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+#dokuwiki__aside .page > p:first-of-type em {
+  display: block;
+  font-size: 11px;
+  font-style: normal;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+/* Headings da sidebar */
+#dokuwiki__aside h1,
+#dokuwiki__aside h2,
+#dokuwiki__aside h3,
+#dokuwiki__aside h4,
+#dokuwiki__aside h5 {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted) !important;
+  margin: 18px 8px 6px !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Listas */
+#dokuwiki__aside ul {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#dokuwiki__aside ul li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#dokuwiki__aside ul li::marker { content: ''; }
+
+#dokuwiki__aside a.wikilink1,
+#dokuwiki__aside a.wikilink2,
+#dokuwiki__aside ul li a {
+  display: block !important;
+  padding: 7px 12px !important;
+  margin: 1px 4px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-soft) !important;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  transition: background-color 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+
+#dokuwiki__aside a.wikilink1:hover,
+#dokuwiki__aside a.wikilink2:hover,
+#dokuwiki__aside ul li a:hover {
+  background: var(--bg-soft) !important;
+  color: var(--text) !important;
+}
+
+#dokuwiki__aside a.wikilink1.curid {
+  background: var(--brand-50) !important;
+  color: var(--brand-700) !important;
+  font-weight: 600 !important;
+}
+
+body.ipam-theme-dark #dokuwiki__aside a.wikilink1.curid {
+  background: var(--brand-100) !important;
+  color: var(--brand-300) !important;
+}
+
+#dokuwiki__aside a.wikilink1.curid::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  background: var(--brand-500);
+  border-radius: 0 2px 2px 0;
+}
+
+#dokuwiki__aside hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 18px 8px;
+}
+
+#dokuwiki__aside .page > p:last-of-type {
+  margin: 12px 12px 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+#dokuwiki__aside .page > p:last-of-type strong {
+  color: var(--brand-600);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+body.ipam-theme-dark #dokuwiki__aside .page > p:last-of-type strong {
+  color: var(--brand-300);
+}
+
+#dokuwiki__aside .page > p:last-of-type em {
+  font-style: normal;
+  color: var(--text-faint);
+}
+
+/* ====================== Content ====================== */
+#dokuwiki__content {
+  padding: 32px 40px;
+  min-width: 0;
+}
+
+/* Card visual SÓ na .page do content principal — sidebar tem .page também e não pode receber esse styling */
+#dokuwiki__content .dokuwiki .page {
+  background: var(--bg-surface);
+  padding: 40px 56px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  max-width: 1280px;
+  margin: 0 auto;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-soft);
+  animation: ipam-fade 0.25s ease-out;
+}
+
+/* Sidebar tem .page por dentro — neutralizar o que estava global */
+#dokuwiki__aside .dokuwiki, #dokuwiki__aside .page {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  max-width: none;
+  animation: none;
+}
+
+@keyframes ipam-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ====================== Tipografia ====================== */
+.dokuwiki h1, .dokuwiki h2, .dokuwiki h3, .dokuwiki h4, .dokuwiki h5 {
+  font-family: var(--font-sans);
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.dokuwiki h1 {
+  font-size: 30px;
+  margin: 0 0 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.2;
+}
+
+.dokuwiki h2 {
+  font-size: 21px;
+  margin: 32px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  line-height: 1.3;
+}
+
+.dokuwiki h3 {
+  font-size: 17px;
+  margin: 26px 0 10px;
+}
+
+.dokuwiki h4 {
+  font-size: 15px;
+  margin: 22px 0 8px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.dokuwiki h5 {
+  font-size: 12.5px;
+  margin: 18px 0 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dokuwiki p { margin: 0 0 14px; line-height: 1.7; }
+
+.dokuwiki a {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: all 0.12s ease;
+}
+
+.dokuwiki a:hover {
+  color: var(--link-hover);
+  border-bottom-color: var(--brand-300);
+}
+
+.dokuwiki a.wikilink2 {
+  color: var(--rose-600);
+  border-bottom-color: var(--rose-200);
+  border-bottom-style: dashed;
+}
+
+.dokuwiki a.urlextern::after {
+  content: ' ↗';
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+
+.dokuwiki strong, .dokuwiki b { font-weight: 600; color: var(--text); }
+.dokuwiki em, .dokuwiki i { font-style: italic; color: var(--text-muted); }
+
+/* ====================== Listas ====================== */
+.dokuwiki ul, .dokuwiki ol {
+  padding-left: 24px;
+  margin: 8px 0 16px;
+}
+
+.dokuwiki ul li, .dokuwiki ol li {
+  margin: 4px 0;
+  padding: 2px 0;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+.dokuwiki ul li::marker { color: var(--brand-500); }
+.dokuwiki ol li::marker { color: var(--brand-600); font-weight: 600; }
+
+/* ====================== TOC ====================== */
+.dokuwiki div.toc, .dokuwiki #dw__toc {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 0 0 24px 24px;
+  font-size: 13px;
+  min-width: 220px;
+  max-width: 280px;
+}
+
+.dokuwiki div.toc .tocheader,
+.dokuwiki #dw__toc h3 {
+  font-size: 10.5px !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  padding: 0;
+  border: none;
+}
+
+.dokuwiki div.toc ul, .dokuwiki #dw__toc ul { padding-left: 14px; }
+
+/* ====================== Código ====================== */
+.dokuwiki code, .dokuwiki tt {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bg-soft);
+  color: var(--brand-700);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+
+body.ipam-theme-dark .dokuwiki code,
+body.ipam-theme-dark .dokuwiki tt { color: var(--brand-300); }
+
+.dokuwiki pre, .dokuwiki pre.code, .dokuwiki pre.file {
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  line-height: 1.55;
+  background: var(--bg-code-block) !important;
+  color: var(--color-code-block) !important;
+  padding: 16px 20px !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid #1e293b;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  white-space: pre;
+}
+
+.dokuwiki pre code {
+  background: transparent !important;
+  color: inherit !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+/* ====================== Tabelas ====================== */
+.dokuwiki table.inline {
+  border-collapse: collapse;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  width: 100%;
+  margin: 16px 0 24px;
+  font-size: 13.5px;
+}
+
+.dokuwiki table.inline th {
+  background: var(--bg-soft) !important;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 14px !important;
+  text-align: left;
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.dokuwiki table.inline td {
+  padding: 10px 14px !important;
+  border: none !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  vertical-align: top;
+  background: var(--bg-surface);
+  color: var(--text-soft);
+}
+
+.dokuwiki table.inline tr:nth-child(even) td {
+  background: var(--bg-soft);
+}
+
+.dokuwiki table.inline tr:hover td {
+  background: var(--brand-50);
+}
+
+body.ipam-theme-dark .dokuwiki table.inline tr:hover td {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* ====================== Blockquote ====================== */
+.dokuwiki blockquote {
+  background: var(--amber-50);
+  border-left: 3px solid var(--amber-600);
+  padding: 12px 18px;
+  margin: 14px 0 18px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+body.ipam-theme-dark .dokuwiki blockquote {
+  background: rgba(217, 119, 6, 0.12);
+}
+
+.dokuwiki hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 28px 0;
+}
+
+/* ====================== Edit/form ====================== */
+textarea.edit {
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  background: var(--bg-surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: var(--radius) !important;
+  padding: 12px !important;
+}
+
+textarea.edit:focus {
+  border-color: var(--brand-500) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+  outline: none !important;
+}
+
+.dokuwiki button,
+.dokuwiki input[type=submit],
+.dokuwiki input[type=button] {
+  background: var(--brand-600) !important;
+  color: #fff !important;
+  font-family: var(--font-sans) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 8px 16px !important;
+  border: none !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.12s ease;
+}
+
+.dokuwiki button:hover,
+.dokuwiki input[type=submit]:hover {
+  background: var(--brand-700) !important;
+}
+
+/* ====================== Selection / scrollbar ====================== */
+::selection {
+  background: var(--brand-200);
+  color: var(--brand-800);
+}
+
+body.ipam-theme-dark ::selection {
+  background: var(--brand-700);
+  color: var(--brand-100);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); background-clip: padding-box; }
+
+/* ====================== Responsivo ====================== */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 240px; }
+  .dokuwiki .page { padding: 32px 32px; }
+  #dokuwiki__content { padding: 20px 16px; }
+  .bar form#dw__search input,
+  form#dw__search input.edit { width: 200px; }
+}
+
+@media (max-width: 768px) {
+  .ipam-menu-toggle { display: inline-flex !important; }
+
+  /* Em mobile: sidebar vira drawer escondido, content sem margin-left */
+  #dokuwiki__aside {
+    width: 320px !important;
+    max-width: 86vw !important;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--shadow-lg);
+  }
+
+  body.ipam-menu-open #dokuwiki__aside { transform: translateX(0); }
+
+  body.ipam-menu-open::before {
+    content: '';
+    position: fixed;
+    inset: var(--header-h) 0 0 0;
+    background: rgba(15, 23, 42, 0.3);
+    z-index: 35;
+  }
+
+  .showSidebar #dokuwiki__content,
+  #dokuwiki__content {
+    margin-left: 0 !important;
+    padding: calc(var(--header-h) + 20px) 16px 20px !important;
+  }
+
+  .bar form#dw__search input,
+  form#dw__search input.edit { width: 100%; max-width: 220px; }
+
+  #dokuwiki__content .dokuwiki .page { padding: 24px 20px; border-radius: var(--radius); }
+  .dokuwiki h1 { font-size: 24px; }
+  .dokuwiki h2 { font-size: 18px; }
+  .dokuwiki h3 { font-size: 16px; }
+}
+
+@media (max-width: 480px) {
+  #dokuwiki__header > div.pad { padding: 0 14px; gap: 8px; }
+  #dokuwiki__header .headings h1 { font-size: 13.5px; }
+  #dokuwiki__header .headings h1::before { width: 28px; height: 28px; font-size: 14px; }
+  .dokuwiki .page { padding: 20px 16px; }
+}

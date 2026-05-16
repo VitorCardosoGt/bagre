@@ -1,0 +1,103 @@
+====== ❓ FAQ + Glossário ======
+
+[[operador:start|← trilha operador]]
+
+----
+
+===== Perguntas comuns =====
+
+==== "Aloquei o IP errado, como desfazer?" ====
+
+  - Vá pra subnet (menu **Sites & Subnets** → clica na subnet)
+  - Encontre o IP
+  - Clique em **"Liberar"** (botão cinza à direita)
+  - O IP volta pra **Livre**. O equipamento **continua cadastrado** (na página Equipamentos) — só perde o vínculo com este IP. Se você criou o equipamento por engano também, vá em **Equipamentos** e exclua ele.
+
+==== "O que significa Livre, Em uso, Reservado, Conflito?" ====
+
+^ Status      ^ O que é                                          ^ O que fazer ^
+| **Livre**   | IP disponível na subnet, ninguém usa            | Pode alocar |
+| **Em uso**  | IP atribuído a um equipamento                    | Não mexer, a não ser que o equipamento foi desligado |
+| **Reservado** | IP guardado pra uso futuro, sem equipamento ainda | Quando for usar, "Alocar" pra atribuir ao equipamento |
+| **Conflito**| Algo está inconsistente (raro)                   | Avise o admin |
+
+==== "Quem mudou esse IP?" ====
+
+Veja a **[[operador:auditoria|página de auditoria]]** — todo registro tem o email de quem alterou e quando.
+
+==== "Posso deletar um IP?" ====
+
+Não diretamente. Os IPs são gerados quando uma **Subnet** é criada (a partir do CIDR), e só são apagados quando a Subnet é apagada.
+
+Se o IP foi cadastrado em uma subnet errada, a forma de "remover" é apagar a Subnet inteira. Cuidado — isso apaga **todos** os IPs daquela subnet de uma vez. Avise o admin.
+
+==== "O equipamento sumiu da lista, o que aconteceu?" ====
+
+Possibilidades:
+  * **Filtro ativo** — verifique se algum filtro (site, tipo, busca) está restringindo a lista
+  * **Foi excluído por outro admin** — verifique a [[operador:auditoria|auditoria]] filtrando por entidade ''device''
+  * **Renomeado** — busque pelo novo nome
+
+==== "Não consigo editar, só vejo (modo Somente Leitura)" ====
+
+Sua conta tem perfil **READER**. Isso é o default ao se cadastrar — você pode consultar tudo mas não alterar.
+
+Peça pro **Fabricio** te promover a ADMIN. É um clique para ele:
+  - Admin → Usuários
+  - Coluna **Perfil** → muda de READER pra ADMIN
+  - Pronto, da próxima vez que você fizer login (ou recarregar), terá os botões de Novo/Editar/Excluir.
+
+==== "Esqueci minha senha" ====
+
+  - Tela de login → **"Esqueci a senha"**
+  - Preenche o email → submete
+  - Por enquanto o link de reset **chega via Fabricio** (sem envio automático por email no momento). Peça pra ele te repassar o token.
+
+==== "Mudei de cargo, agora preciso ser ADMIN" ====
+
+Mesma coisa: Fabricio te promove em **Admin → Usuários**.
+
+==== "Como exportar a lista de IPs em uso pra Excel?" ====
+
+Ainda não tem botão de exportar na UI. Caminho atual:
+
+  - Pede pro Fabricio rodar uma consulta SQL e te mandar
+  - Em breve a UI vai ter exportação CSV (na fila)
+
+==== "Quando o Zabbix vai atualizar as informações automaticamente?" ====
+
+Quando a integração com Zabbix for configurada (URL + token), o sistema sincroniza **a cada 15 minutos**:
+  * Atualiza vendor, modelo, OS, MAC dos hosts que o Zabbix monitora
+  * Marca "Última vez visto" pra cada IP
+  * Detecta hosts novos que aparecerem no Zabbix
+
+Hoje (ainda não configurado) esses campos só são preenchidos manualmente.
+
+----
+
+===== Glossário =====
+
+^ Termo               ^ Significado simples ^
+| **IP**              | Endereço único de um dispositivo na rede (ex: ''10.150.0.5'') |
+| **Subnet**          | Um pedaço da rede com vários IPs próximos (ex: ''10.150.0.0/24'' = 254 IPs) |
+| **CIDR**            | Notação compacta de subnet com a máscara (ex: ''/24'' = 256 endereços) |
+| **Máscara**         | Define quantos IPs cabem na subnet (''/24'' → 256, ''/25'' → 128, ''/22'' → 1024) |
+| **Gateway**         | O IP que serve como "porta de saída" da subnet pra outras redes (normalmente o primeiro IP útil, ex: ''10.150.0.1'') |
+| **Broadcast**       | Último IP da subnet, reservado pra mandar mensagens pra todos da subnet (ex: ''10.150.0.255'' numa ''/24'') |
+| **VLAN**            | Rede lógica que isola tráfego dentro de um switch (ex: VLAN 100 = produção) |
+| **MAC address**     | Identificador único físico da placa de rede (ex: ''AA:BB:CC:DD:EE:FF'') |
+| **Hostname**        | Nome legível do equipamento (ex: ''srv-prod-web-01'') |
+| **DNS**             | Sistema que converte hostname em IP |
+| **NAT**             | Tradução de endereço — usa IPs internos diferentes dos públicos |
+| **Firewall**        | Equipamento que filtra tráfego entre redes |
+| **Range**           | Conjunto de IPs (ex: ''10.150.0.1 - 10.150.0.254'') |
+| **Multi-NIC**       | Servidor com mais de uma placa de rede (logo, mais de um IP) |
+| **VIP**             | Virtual IP — IP "flutuante" entre 2 equipamentos em HA (alta disponibilidade) |
+| **HA**              | High Availability — ter um equipamento sobressalente que assume se o primário cair |
+| **Inventário**      | Lista de todos os equipamentos (servidores, switches, etc) |
+| **JWT**             | Token que prova que você está autenticado (vive 8h) |
+| **RBAC**            | Role-Based Access Control — quem é ADMIN faz tudo, quem é READER só vê |
+| **Self-signed**     | Certificado de TLS feito "em casa" (não por uma CA pública). Funciona, mas o navegador avisa na primeira vez. |
+| **VPN**             | Túnel seguro pra você acessar a rede interna da empresa de fora |
+| **API**             | Forma do sistema falar com outros sistemas (Zabbix, Fortinet, etc) via HTTP |
+| **REST**            | Padrão da API que o IPAM usa (URLs como ''/api/sites'', ''/api/devices'') |

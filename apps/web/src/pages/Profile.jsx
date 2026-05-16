@@ -1,0 +1,126 @@
+import { useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
+import { api } from '../api.js';
+import { useAuth } from '../auth/AuthContext.jsx';
+import PageHeader from '../components/PageHeader.jsx';
+
+export default function Profile() {
+  const { user, refresh } = useAuth();
+  const [params] = useSearchParams();
+  const force = params.get('force') === '1';
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [msg, setMsg] = useState(null);
+  const [err, setErr] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  async function submit(e) {
+    e.preventDefault();
+    setMsg(null);
+    setErr(null);
+    if (next !== confirm) {
+      setErr('As senhas não conferem');
+      return;
+    }
+    if (next.length < 8) {
+      setErr('Mínimo 8 caracteres');
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.changePassword(current, next);
+      setMsg('Senha atualizada.');
+      setCurrent('');
+      setNext('');
+      setConfirm('');
+      await refresh();
+      if (force) setTimeout(() => navigate('/'), 800);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="max-w-xl space-y-5">
+      <PageHeader
+        title="Meu perfil"
+        description={
+          <>
+            Você está logado como <span className="font-medium">{user?.email}</span> ·{' '}
+            <span className="font-mono text-xs">{user?.role}</span>
+          </>
+        }
+      />
+
+      {force && (
+        <div className="card p-4 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20">
+          <div className="flex items-start gap-2 text-sm">
+            <AlertCircle size={16} className="text-amber-500 mt-0.5" />
+            <div>
+              <strong>Troca de senha obrigatória.</strong> Você precisa definir
+              uma nova senha antes de continuar.
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={submit} className="card p-5 space-y-3">
+        <h2 className="font-semibold flex items-center gap-2">
+          <KeyRound size={18} /> Trocar senha
+        </h2>
+        {err && (
+          <div className="flex items-start gap-2 text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-300 p-2 rounded">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{err}</span>
+          </div>
+        )}
+        {msg && (
+          <div className="flex items-start gap-2 text-sm text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300 p-2 rounded">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+            <span>{msg}</span>
+          </div>
+        )}
+        <div>
+          <label className="block text-sm mb-1">Senha atual</label>
+          <input
+            type="password"
+            required
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            className="input"
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Nova senha</label>
+          <input
+            type="password"
+            required
+            minLength={8}
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            className="input"
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Confirme a nova senha</label>
+          <input
+            type="password"
+            required
+            minLength={8}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="input"
+          />
+        </div>
+        <button className="btn-primary" disabled={loading}>
+          {loading ? 'Salvando…' : 'Salvar'}
+        </button>
+      </form>
+    </div>
+  );
+}

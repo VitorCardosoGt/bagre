@@ -1,0 +1,193 @@
+const BASE = import.meta.env.VITE_API_URL || '/api';
+const TOKEN_KEY = 'bagre.token';
+
+export const auth = {
+  getToken: () => localStorage.getItem(TOKEN_KEY),
+  setToken: (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY)),
+  clear: () => localStorage.removeItem(TOKEN_KEY),
+};
+
+let onUnauthorized = () => {};
+export function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn;
+}
+
+async function request(path, opts = {}) {
+  const headers = { ...(opts.headers || {}) };
+  // Only set JSON content-type when there's actually a body to send.
+  // Fastify rejects requests with content-type set but empty body.
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  const token = auth.getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  if (res.status === 401) {
+    auth.clear();
+    onUnauthorized();
+    throw new Error('unauthorized');
+  }
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const j = await res.json();
+      detail = j.error || JSON.stringify(j);
+    } catch {
+      detail = await res.text();
+    }
+    throw new Error(detail || `${res.status} ${res.statusText}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+export const api = {
+  // auth
+  login: (email, password) =>
+    request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  signup: (data) =>
+    request('/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
+  me: () => request('/auth/me'),
+  changePassword: (currentPassword, newPassword) =>
+    request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  resetRequest: (email) =>
+    request('/auth/reset-request', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetApply: (token, newPassword) =>
+    request('/auth/reset', { method: 'POST', body: JSON.stringify({ token, newPassword }) }),
+
+  // users (admin)
+  users: () => request('/users'),
+  createUser: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id, data) =>
+    request(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+  resetUser: (id) => request(`/users/${id}/reset`, { method: 'POST' }),
+
+  // devices (equipamentos)
+  devices: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/devices${qs ? `?${qs}` : ''}`);
+  },
+  device: (id) => request(`/devices/${id}`),
+  createDevice: (data) => request('/devices', { method: 'POST', body: JSON.stringify(data) }),
+  updateDevice: (id, data) =>
+    request(`/devices/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDevice: (id) => request(`/devices/${id}`, { method: 'DELETE' }),
+
+  // allocation
+  allocateIp: (ipId, payload) =>
+    request(`/ips/${ipId}/allocate`, { method: 'POST', body: JSON.stringify(payload) }),
+  subnetNextFreeIp: (subnetId) => request(`/subnets/${subnetId}/next-free-ip`),
+
+  // pending discoveries (Zabbix gate)
+  pendingDiscoveries: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/pending-discoveries${qs ? `?${qs}` : ''}`);
+  },
+  pendingDiscoveriesStats: () => request('/pending-discoveries/stats'),
+  approvePendingDiscovery: (id, payload) =>
+    request(`/pending-discoveries/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  rejectPendingDiscovery: (id, payload) =>
+    request(`/pending-discoveries/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    }),
+  bulkApprovePendingDiscoveries: (payload) =>
+    request(`/pending-discoveries/bulk-approve`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  // sites + subnets CRUD
+  createSite: (data) => request('/sites', { method: 'POST', body: JSON.stringify(data) }),
+  updateSite: (id, data) =>
+    request(`/sites/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteSite: (id) => request(`/sites/${id}`, { method: 'DELETE' }),
+  createSubnet: (data) =>
+    request('/subnets', { method: 'POST', body: JSON.stringify(data) }),
+  updateSubnet: (id, data) =>
+    request(`/subnets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteSubnet: (id) => request(`/subnets/${id}`, { method: 'DELETE' }),
+
+  // audit
+  audit: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/audit${qs ? `?${qs}` : ''}`);
+  },
+  auditEntities: () => request('/audit/entities'),
+
+  // Integrações
+  integrationsStatus: () => request('/admin/integrations/status'),
+
+  // Zabbix
+  zabbixConfig: () => request('/admin/zabbix-config'),
+  updateZabbixConfig: (data) =>
+    request('/admin/zabbix-config', { method: 'PATCH', body: JSON.stringify(data) }),
+  testZabbixConfig: () => request('/admin/zabbix-config/test', { method: 'POST' }),
+  syncZabbix: () => request('/admin/zabbix-config/sync', { method: 'POST' }),
+
+  // Network health
+  networkHealth: () => request('/network-health'),
+
+  // SSO / OIDC
+  config: () => request('/config'),
+  oidcConfig: () => request('/admin/oidc-config'),
+  updateOidcConfig: (data) =>
+    request('/admin/oidc-config', { method: 'PATCH', body: JSON.stringify(data) }),
+  testOidcConfig: () =>
+    request('/admin/oidc-config/test', { method: 'POST' }),
+
+  health: () => request('/health'),
+  stats: () => request('/stats'),
+  statsBySite: () => request('/stats/by-site'),
+
+  sites: () => request('/sites'),
+  site: (id) => request(`/sites/${id}`),
+
+  subnet: (id) => request(`/subnets/${id}`),
+  subnetIps: (id, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/subnets/${id}/ips${qs ? `?${qs}` : ''}`);
+  },
+
+  updateIp: (id, data) =>
+    request(`/ips/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  releaseIp: (id) => request(`/ips/${id}/release`, { method: 'POST' }),
+  reserveIp: (id) => request(`/ips/${id}/reserve`, { method: 'POST' }),
+
+  search: (q) => request(`/search?q=${encodeURIComponent(q)}`),
+
+  masterRanges: () => request('/master-ranges'),
+  createMasterRange: (data) =>
+    request('/master-ranges', { method: 'POST', body: JSON.stringify(data) }),
+  updateMasterRange: (id, data) =>
+    request(`/master-ranges/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteMasterRange: (id) => request(`/master-ranges/${id}`, { method: 'DELETE' }),
+
+  equinixVlans: () => request('/equinix-vlans'),
+  createEquinixVlan: (data) =>
+    request('/equinix-vlans', { method: 'POST', body: JSON.stringify(data) }),
+  updateEquinixVlan: (id, data) =>
+    request(`/equinix-vlans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteEquinixVlan: (id) => request(`/equinix-vlans/${id}`, { method: 'DELETE' }),
+
+  azureSubnets: () => request('/azure-subnets'),
+  createAzureSubnet: (data) =>
+    request('/azure-subnets', { method: 'POST', body: JSON.stringify(data) }),
+  updateAzureSubnet: (id, data) =>
+    request(`/azure-subnets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteAzureSubnet: (id) => request(`/azure-subnets/${id}`, { method: 'DELETE' }),
+
+  cidrReference: () => request('/cidr-reference'),
+
+  firewallRules: () => request('/firewall-rules'),
+  createFirewallRule: (data) =>
+    request('/firewall-rules', { method: 'POST', body: JSON.stringify(data) }),
+  updateFirewallRule: (id, data) =>
+    request(`/firewall-rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteFirewallRule: (id) => request(`/firewall-rules/${id}`, { method: 'DELETE' }),
+};

@@ -1,0 +1,259 @@
+====== Desenvolvimento ======
+
+[[tecnico:start|← trilha técnica]]
+
+Como contribuir com o IPAM: subir local, adicionar rotas, adicionar páginas React, convenções.
+
+----
+
+===== Pré-requisitos =====
+
+^ Ferramenta ^ Versão ^ Por quê ^
+| Node       | 20+ (LTS) | Backend e frontend |
+| Docker Desktop | atual | Banco + (futuro) hot-reload dev |
+| Git        | qualquer | Versionamento |
+| WSL2 (Windows) | Ubuntu 22.04+ | Linux ergonomics em Windows |
+| Editor     | VS Code recomendado | Extensões: ESLint, Prettier, Prisma, Tailwind |
+
+----
+
+===== Subir ambiente local =====
+
+==== Opção A — Stack completa via Docker (igual a prod, sem TLS) ====
+
+Cria um ''.env'' com valores de dev e usa o ''docker-compose.yml'' principal:
+
+<code>
+# .env (na raiz, gitignored)
+ADMIN_TOKEN=dev-admin-token
+INGEST_TOKEN=dev-ingest-token
+JWT_SECRET=dev-jwt-secret-not-for-production-min-32
+BOOTSTRAP_ADMIN_EMAIL=admin@dev.local
+BOOTSTRAP_ADMIN_PASSWORD=dev1234567
+STATS_PUBLIC=true
+</code>
+
+<code>
+docker compose up -d
+</code>
+
+Acessa em ''http://localhost:3000'' (web) e ''http://localhost:3001'' (api).
+
+> ⚠️ Quando estiver de pé em prod com HTTPS, esta configuração local ainda usa HTTP nas portas 3000/3001. Cuidado pra não testar tudo só local sem checar TLS.
+
+==== Opção B — Hot reload (planejado, não implementado) ====
+
+''docker-compose.dev.yml'' com:
+  * API rodando ''node --watch src/index.js'' (recarrega ao salvar)
+  * Web rodando ''vite dev'' (HMR no browser)
+  * Mounts de ''apps/api/src'' e ''apps/web/src''
+
+Veja **Fila restante** em [[tecnico:estado-atual]].
+
+==== Opção C — npm run dev direto no host ====
+
+Postgres em docker, API e Web em ''npm run dev'':
+
+<code>
+# 1. Postgres em docker
+docker compose up -d db
+
+# 2. API em outro terminal
+cd apps/api
+npm install
+npx prisma generate
+npx prisma db push --accept-data-loss
+npm run dev   # node --watch src/index.js
+
+# 3. Web em outro terminal
+cd apps/web
+npm install
+npm run dev   # vite, abre em http://localhost:5173
+</code>
+
+Vite proxy automaticamente ''/api/*'' pra ''http://localhost:3001'' (ver ''vite.config.js'').
+
+----
+
+===== Adicionar uma rota nova =====
+
+Cenário: nova rota ''/api/widgets''.
+
+==== 1. Criar o arquivo de rota ====
+
+''apps/api/src/routes/widgets.js'':
+
+<code javascript>
+import { prisma } from '../db.js';
+import { auditFromReq } from '../audit.js';
+
+export async function registerWidgets(app) {
+  app.get('/api/widgets', async () => {
+    return prisma.widget.findMany({ orderBy: { name: 'asc' } });
+  });
+
+  app.post('/api/widgets', async (req, reply) => {
+    const { name } = req.body || {};
+    if (!name) {
+      reply.code(400);
+      return { error: 'name é obrigatório' };
+    }
+    const created = await prisma.widget.create({ data: { name } });
+    await auditFromReq(req, {
+      entity: 'widget',
+      entityId: created.id,
+      action: 'create',
+      after: created,
+    });
+    return created;
+  });
+}
+</code>
+
+==== 2. Registrar em ''apps/api/src/index.js'' ====
+
+<code javascript>
+import { registerWidgets } from './routes/widgets.js';
+// ...
+await registerWidgets(app);
+</code>
+
+==== 3. Adicionar helper no cliente ====
+
+''apps/web/src/api.js'':
+
+<code javascript>
+widgets: () => request('/widgets'),
+createWidget: (data) => request('/widgets', { method: 'POST', body: JSON.stringify(data) }),
+</code>
+
+==== 4. Pronto ====
+
+Auth, RBAC e JWT já são aplicados **automaticamente** pelo hook global em ''index.js'':
+  * GET é acessível a qualquer user logado (incluindo READER)
+  * POST/PATCH/DELETE retorna 403 se ''role !== ADMIN'' (a não ser que seja ''/auth/change-password'' ou ''/auth/me'')
+
+> ⚠️ **Não precisa colocar guards manuais.** Se quiser que sua rota seja pública (não-autenticada), adicione o path em ''PUBLIC'' no ''index.js''.
+
+----
+
+===== Adicionar uma página React nova =====
+
+Cenário: nova página ''/widgets''.
+
+==== 1. Criar o componente ====
+
+''apps/web/src/pages/Widgets.jsx'' — siga o padrão de ''Devices.jsx'' ou ''Catalogs.jsx'' (tabela + modal + useQuery + useMutation).
+
+==== 2. Adicionar rota em ''App.jsx'' ====
+
+<code javascript>
+import Widgets from './pages/Widgets.jsx';
+// ...
+<Route path="/widgets" element={<Widgets />} />
+</code>
+
+==== 3. Adicionar no menu (se quiser) ====
+
+''apps/web/src/components/Layout.jsx'' → ''NAV_BASE'' (visível pra todos) ou ''NAV_ADMIN'' (só ADMIN):
+
+<code javascript>
+import { Boxes } from 'lucide-react';   // ou outro ícone
+// ...
+const NAV_BASE = [
+  // ...
+  { to: '/widgets', label: 'Widgets', icon: Boxes },
+];
+</code>
+
+==== 4. RBAC condicional na UI ====
+
+Use ''useAuth()'' e mostre/esconda botões conforme ''user.role === 'ADMIN'''.
+
+<code javascript>
+const { user } = useAuth();
+const canEdit = user?.role === 'ADMIN';
+
+return (
+  // ...
+  {canEdit && <button onClick={openNew}>Novo</button>}
+);
+</code>
+
+----
+
+===== Mudar o schema do banco =====
+
+  - Editar ''apps/api/prisma/schema.prisma''
+  - Rebuild da imagem: ''docker compose build api''
+  - Recreate: ''docker compose up -d --force-recreate api''
+
+O entrypoint roda ''npx prisma db push --accept-data-loss'' automaticamente.
+
+> ⚠️ ''--accept-data-loss'' dropa colunas/tabelas removidas sem perguntar. Em produção, considere migrations explícitas com ''prisma migrate dev'' (não usado hoje neste projeto).
+
+==== Migrations one-shot (scripts) ====
+
+Pra rodar uma migration custom (ex: backfill de dados):
+
+  - Criar arquivo em ''apps/api/scripts/migrate-xxx.js''
+  - Importar ''@prisma/client''
+  - Adicionar ''COPY scripts ./scripts'' no Dockerfile (já está)
+  - Rodar via ''docker compose exec api node /app/scripts/migrate-xxx.js''
+
+Exemplo: ''scripts/migrate-devices.js'' que rodou na Onda 1.
+
+----
+
+===== Convenções do projeto =====
+
+  * **Audit em toda mutação** — use ''auditFromReq(req, {entity, entityId, action, before, after})''. Without audit, change é invisível.
+  * **Idempotência** — POST/PATCH devem ser idempotentes onde possível (use ''upsert'' do Prisma, ou check de existência antes de criar).
+  * **Validação de input** — verifique campos obrigatórios e retorne 400 explícito. Não confie em ''!== undefined'' só.
+  * **Use ''pick()'' helpers** pra filtrar campos do body — não passe ''req.body'' direto pro Prisma (risco de mass-assignment).
+  * **Logs sem segredos** — nunca logar senha, token, hash, JWT. Use ''[redacted]''.
+  * **Schema em camelCase** no Prisma; o cliente JS sempre vê camelCase. PostgreSQL armazena com double-quotes literais (''"deviceId"'').
+  * **Front-end usa React Query** pra todas as chamadas. Use ''invalidateQueries'' depois de mutations pra atualizar a UI.
+  * **Não criar IPs avulsos** — IPs são gerados a partir do CIDR da Subnet. Pra "adicionar um IP", crie a Subnet com o CIDR certo.
+
+----
+
+===== Testes =====
+
+  * **Não há testes automatizados ainda.** Todo teste é smoke manual.
+  * Antes de fazer deploy, mínimo: ''curl /api/health'' + login + uma operação CRUD.
+  * Pra testar mutations sem afetar prod, use o ambiente local da Opção A acima.
+
+----
+
+===== Linting & formatação =====
+
+Sem ESLint/Prettier configurados no projeto ainda. Recomendado:
+
+<code>
+# api
+npm install --save-dev eslint @eslint/js
+# web
+npm install --save-dev eslint @eslint/js @typescript-eslint/parser eslint-plugin-react
+</code>
+
+----
+
+===== Como fazer release (deploy em SP3) =====
+
+Veja **[[tecnico:operacao#Deploy]]**. Resumo:
+
+<code>
+cd /mnt/c/Users/admin/ipam
+tar -czf - apps/ docker-compose.yml \
+  | ssh sp3 'tar -xzf - -C ~/ipam && cd ~/ipam && docker compose build api web && docker compose up -d --force-recreate api web'
+</code>
+
+----
+
+===== Repo & branching =====
+
+  * Repo: %%github.com/fabgcruz/ipam%% (privado)
+  * Branch principal: ''main''
+  * Sem fluxo de PR formal hoje — commits direto em ''main''.
+  * Considerar fork pra features grandes / experimentos.

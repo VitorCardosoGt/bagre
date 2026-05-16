@@ -1,0 +1,133 @@
+====== Operação ======
+
+[[tecnico:start|← trilha técnica]]
+
+----
+
+===== Deploy =====
+
+Sem CI/CD configurado. Deploy é via **transferência do código + rebuild + recreate**:
+
+==== Pré-requisitos ====
+
+  * VPN Bagre (FortiClient) conectada
+  * Chave SSH plantada em ''deploy@10.0.0.10'' (já feito)
+  * Workspace local em ''C:\Users\admin\ipam''
+
+==== Fluxo padrão (manual) ====
+
+<code>
+# 1. Transfere os arquivos modificados pra VM
+cd /mnt/c/Users/admin/ipam
+tar --exclude='./apps/web/dist' --exclude='./apps/*/node_modules' -czf - apps/ docker-compose.yml \
+  | ssh sp3 'tar -xzf - -C ~/ipam'
+
+# 2. Rebuild e recreate
+ssh sp3 'cd ~/ipam && docker compose build api web && docker compose up -d --force-recreate api web'
+
+# 3. Aguardar health
+ssh sp3 'curl -sfk https://localhost/api/health'
+</code>
+
+→ O entrypoint do container ''api'' faz automaticamente:
+  - ''npx prisma db push --accept-data-loss'' (sincroniza schema)
+  - ''node src/import.js --if-empty /app/seed.json'' (popula só se DB vazio)
+  - ''node src/index.js'' (sobe a API)
+
+----
+
+===== Backup =====
+
+==== Manual ====
+
+<code>
+docker compose exec -T db pg_dump -U bagre bagre | gzip > backup-$(date +%Y%m%d).sql.gz
+</code>
+
+==== Automático (cron) ====
+
+Em ''/etc/cron.d/bagre-backup'' (ou crontab do user ''deploy''):
+
+<code>
+0 2 * * * bash /home/deploy/ipam/infra/backup.sh >> /var/log/bagre-backup.log 2>&1
+</code>
+
+O script ''infra/backup.sh'' faz dump + retenção de 14 dias em ''/var/backups/bagre/''.
+
+==== Restore ====
+
+<code>
+gunzip -c backup-20260512.sql.gz | docker compose exec -T db psql -U bagre -d bagre
+</code>
+
+----
+
+===== Logs =====
+
+<code>
+# tudo
+docker compose logs -f
+
+# só api ou só web
+docker compose logs -f api
+docker compose logs -f web
+
+# últimas 50 linhas
+docker compose logs --tail=50 api
+</code>
+
+----
+
+===== Comandos comuns =====
+
+<code>
+# subir
+docker compose up -d
+
+# parar
+docker compose down
+
+# parar + apagar volumes (CUIDADO: zera DB)
+docker compose down -v
+
+# entrar no container api
+docker compose exec api sh
+
+# psql
+docker compose exec db psql -U bagre -d bagre
+
+# regenerar Prisma client
+docker compose exec api npx prisma generate
+
+# rodar migration manual
+docker compose exec api node scripts/migrate-devices.js
+</code>
+
+----
+
+===== Troubleshooting =====
+
+^ Sintoma                                  ^ Causa provável                                  ^ Fix ^
+| HTTP 401 inesperado em rota nova         | Rota não está em ''PUBLIC'' (whitelist)        | Adicionar em ''apps/api/src/index.js'' ou enviar token |
+| HTTP 403 com READER                      | Tentando ''POST/PATCH/DELETE'' sem ser ADMIN   | Logar como ADMIN |
+| Browser reclama de certificado           | Cert self-signed, primeira visita              | Aceitar e prosseguir (1x por browser) |
+| API ''Cannot find module @prisma/client''| ''npx prisma generate'' não rodou após schema change | Rebuild api ou ''docker compose exec api npx prisma generate'' |
+| ''/api/stats'' retorna 401               | ''STATS_PUBLIC=false'' (correto pra prod)       | Logar e enviar Bearer |
+| Login admin esquecido                    | -                                              | ''docker compose exec api node'' + bcrypt.hash + UPDATE user |
+| Porta 3001 querida externa               | Foi fechada no compose (correto pra HTTPS-only) | Acessar via ''https://.../api/*'' (passa pelo nginx) |
+
+----
+
+===== Variáveis de ambiente =====
+
+No ''.env'' da VM (não no git):
+
+^ Variável                       ^ Função ^
+| ''ADMIN_TOKEN''                | Token para ''/api/import/seed'' |
+| ''INGEST_TOKEN''               | Token para ''/api/ingest/*'' |
+| ''JWT_SECRET''                 | Assinatura dos JWTs |
+| ''BOOTSTRAP_ADMIN_EMAIL''      | Email do admin inicial (só na 1ª subida) |
+| ''BOOTSTRAP_ADMIN_PASSWORD''   | Senha do admin inicial (só na 1ª subida) |
+| ''STATS_PUBLIC''               | ''true'' deixa ''/api/stats'' público (debug) |
+| ''SIGNUP_ENABLED''             | ''false'' desliga ''/api/auth/signup'' |
+| ''SIGNUP_ALLOWED_DOMAINS''     | CSV de domínios aceitos no signup |

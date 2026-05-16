@@ -1,0 +1,128 @@
+====== API REST ======
+
+[[tecnico:start|← trilha técnica]]
+
+Base URL: %%https://10.0.0.10/api%%. Todos os endpoints abaixo prefixados com ''/api''.
+
+----
+
+===== Autenticação =====
+
+==== Login ====
+
+''POST /auth/login''
+
+<code>
+curl -k -X POST https://10.0.0.10/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"voce@bagre.com.br","password":"..."}'
+</code>
+
+Resposta:
+<code>{ "token": "eyJ...", "user": { "id": 1, "email": "...", "name": "...", "role": "ADMIN", "mustChangePwd": false } }</code>
+
+O JWT vai no header ''Authorization: Bearer <token>'' nas chamadas seguintes. TTL = 8h.
+
+==== Signup (self-service) ====
+
+''POST /auth/signup'' — público, valida domínio (default: ''@bagre.com.br''), cria User role READER ativo, retorna token.
+
+==== Outras rotas de auth ====
+
+  * ''GET /auth/me'' — info do user logado
+  * ''POST /auth/change-password'' — body: ''{currentPassword, newPassword}''
+  * ''POST /auth/reset-request'' — body: ''{email}'' (público — sempre 200 pra evitar enumeração)
+  * ''POST /auth/reset'' — body: ''{token, newPassword}'' (público)
+  * ''GET /auth/sso/start'' / ''/sso/callback'' — fluxo OIDC
+
+----
+
+===== Sites & Subnets =====
+
+^ Método ^ Path                              ^ RBAC ^
+| GET    | ''/sites''                        | qualquer logado |
+| GET    | ''/sites/:id''                    | qualquer |
+| GET    | ''/sites/:id/health''             | qualquer |
+| POST   | ''/sites''                        | ADMIN |
+| PATCH  | ''/sites/:id''                    | ADMIN |
+| DELETE | ''/sites/:id''                    | ADMIN |
+| GET    | ''/subnets/:id''                  | qualquer |
+| GET    | ''/subnets/:id/ips?q=&status=''   | qualquer |
+| GET    | ''/subnets/:id/next-free-ip''     | qualquer |
+| POST   | ''/subnets''                      | ADMIN (expande CIDR → cria IPs FREE) |
+| PATCH  | ''/subnets/:id''                  | ADMIN |
+| DELETE | ''/subnets/:id''                  | ADMIN |
+
+===== IPs =====
+
+^ Método ^ Path                       ^ Descrição ^
+| PATCH  | ''/ips/:id''               | edita type/hostname/function/notes |
+| POST   | ''/ips/:id/release''       | volta pra FREE, limpa dados |
+| POST   | ''/ips/:id/reserve''       | marca como RESERVED |
+| POST   | ''/ips/:id/allocate''      | aloca a um Device (cria ou usa existente) |
+
+''POST /ips/:id/allocate'' body:
+<code>
+{
+  "device": { "name": "srv-novo-01", "type": "Servidor Linux", "vendor": "Dell", "model": "R740" },
+  "hostname": "srv-novo-01",
+  "function": "Web Server",
+  "notes": "...",
+  "macAddress": "AA:BB:CC:DD:EE:FF"
+}
+</code>
+
+Ou referenciar um device existente:
+<code>{ "device": { "id": 42 }, "hostname": "...", ... }</code>
+
+===== Devices (Inventário) =====
+
+^ Método ^ Path                              ^
+| GET    | ''/devices?q=&siteId=&type=&vendor='' |
+| GET    | ''/devices/:id'' (inclui ips[]) |
+| POST   | ''/devices'' |
+| PATCH  | ''/devices/:id'' |
+| DELETE | ''/devices/:id'' (libera IPs via SetNull) |
+
+===== Catálogos =====
+
+Todos suportam GET/POST/PATCH/DELETE (escrita só ADMIN):
+
+  * ''/master-ranges''
+  * ''/equinix-vlans''
+  * ''/azure-subnets''
+  * ''/firewall-rules''
+  * ''/cidr-reference'' (somente GET)
+
+===== Admin =====
+
+  * ''/users'' (CRUD) — ''/users/:id/reset'' gera token de reset
+  * ''/audit?entity=&entityId=&action='' — log de operações
+  * ''/admin/oidc-config'' (GET/PATCH) — config SSO
+  * ''/admin/zabbix-config'' (GET/PATCH) + ''/admin/zabbix-config/test'' + ''/.../sync''
+  * ''/admin/integrations/status''
+  * ''/admin/network-health''
+
+===== Públicos sem auth =====
+
+  * ''/health'' — ''{"ok":true,"ts":"..."}''
+  * ''/config'' — config pública (signup enabled, OIDC enabled, domains permitidos)
+  * ''/metrics'' — Prometheus
+
+===== Ingest (token próprio) =====
+
+Auth via header ''X-Ingest-Token'' = env ''INGEST_TOKEN'' (não JWT). Usado por Zabbix/scanners externos.
+
+  * ''POST /ingest/discoveries'' — body ''{discoveries:[{address, hostname, type, ...}]}''
+  * ''POST /ingest/heartbeat'' — body ''{address, alive, source}''
+
+===== Exemplos com token =====
+
+<code>
+TOKEN=$(curl -sk -X POST https://10.0.0.10/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"...","password":"..."}' | jq -r .token)
+
+curl -sk -H "Authorization: Bearer $TOKEN" \
+  https://10.0.0.10/api/devices | jq '.[] | {id, name, type, vendor}'
+</code>

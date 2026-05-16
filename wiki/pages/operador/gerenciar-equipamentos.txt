@@ -1,0 +1,105 @@
+====== 🖥️ Gerenciar equipamentos ======
+
+[[operador:start|← trilha operador]]
+
+----
+
+A página **Equipamentos** (menu lateral) é o **inventário consolidado** do seu ambiente. Cada linha é um equipamento (servidor, switch, roteador, firewall, etc).
+
+Diferente da página de Subnets — que mostra IPs — aqui você vê o **objeto físico/lógico**, com todos os IPs que ele tem vinculados.
+
+===== Para que serve =====
+
+  * Saber o que existe no inventário
+  * Achar um equipamento pelo nome / vendor / modelo / responsável
+  * Editar informações que mudaram (novo OS, novo responsável)
+  * Cadastrar equipamento que ainda não tem IP (planejamento)
+  * Remover equipamento aposentado
+
+----
+
+===== A tabela =====
+
+^ Coluna        ^ O que é ^
+| **Nome**      | Hostname canônico (ex: srv-prod-01) |
+| **Tipo**      | Servidor Linux, Switch, Firewall, etc |
+| **Vendor / Modelo** | Dell · PowerEdge R740, Cisco · Catalyst 3850, etc |
+| **Site**      | Em qual site/datacenter ele está |
+| **IPs**       | Quantos IPs vinculados |
+| **Responsável** | Email do dono |
+| **Última vez visto** | Quando o Zabbix detectou pela última vez |
+
+===== Filtros (cantos superiores) =====
+
+  * **Busca livre** — nome, vendor, modelo, serial, email
+  * **Site** — filtra por datacenter
+  * **Tipo** — filtra por categoria (só mostra tipos que existem na lista atual)
+
+===== Detalhe do equipamento =====
+
+Clique numa linha. Abre um modal com:
+
+  * Todos os campos preenchidos (tipo, vendor, modelo, serial, OS, role, responsável, notas)
+  * **Lista de IPs vinculados** — cada item é um link clicável que te leva direto ao IP na sua subnet
+
+===== Cadastrar um equipamento =====
+
+> Requer perfil Administrador.
+
+  - Botão **"Novo equipamento"** no topo da página
+  - Preenche os campos (Nome obrigatório, resto opcional)
+  - Salva
+
+> ℹ️ Este fluxo cria um equipamento **sem IP vinculado** — útil pra:
+>   * Cadastrar antecipadamente (servidor chegou, ainda não foi ligado na rede)
+>   * Trazer dados antes de configurar a rede
+>   * Linkar IP depois via [[operador:alocar-ip|fluxo de alocação]]
+
+===== Editar =====
+
+> Requer perfil Administrador.
+
+  - Lápis ao final da linha
+  - Modal idêntico ao de criar, mas pré-preenchido
+  - Salva
+
+===== Excluir =====
+
+> Requer perfil Administrador.
+
+  - Lixeira ao final da linha
+  - Modal de confirmação avisa se há IPs vinculados
+  - Confirma:
+    * Equipamento é apagado
+    * IPs vinculados **NÃO são apagados** — só perdem o vínculo (deviceId fica vazio)
+    * Audit log registra
+
+----
+
+===== Como o sistema lida com hosts multi-IP =====
+
+Servidores com 2 NICs, switches L3 com VIP/HA, gateways multi-WAN — todos têm **mais de um IP** vinculado ao **mesmo equipamento**.
+
+O sistema cuida disso automaticamente quando você usa "Vincular equipamento existente" na hora de alocar. A coluna **IPs** mostra a contagem.
+
+Exemplo:
+^ Nome         ^ Tipo      ^ IPs ^
+| srv-ha-cluster-01 | Servidor Linux | **3** |
+| sw-core-sp3      | Switch    | **2** |
+| fw-edge-01       | Firewall  | **5** |
+
+----
+
+===== Equipamentos vindos do Zabbix =====
+
+Quando a integração com Zabbix estiver ativa, o sistema automaticamente:
+
+  * Atualiza campos do equipamento (vendor, model, OS) com base no inventory do Zabbix
+  * Atualiza **"Última vez visto"** a cada sync
+  * Mostra ícone/indicador se o host sumiu há muitos dias
+
+→ Esses campos podem ser editados manualmente também — mas o próximo sync sobrescreve.
+
+----
+
+  * Próximo: [[operador:catalogos|📋 Catálogos de referência]]

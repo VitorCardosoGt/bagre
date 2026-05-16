@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  code, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  ::selection {
+    @apply bg-brand-100 text-brand-900;
+  }
+  /* Modern thin scrollbars */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(203 213 225 / 0.7);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: rgb(148 163 184); }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium
+           transition-all duration-150 active:scale-[0.98];
+  }
+  .btn-primary {
+    @apply btn text-white bg-gradient-to-b from-brand-500 to-brand-600
+           hover:from-brand-600 hover:to-brand-700
+           shadow-soft hover:shadow-glow;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 dark:text-slate-300
+           hover:bg-slate-100 dark:hover:bg-slate-800;
+  }
+  .btn-danger {
+    @apply btn text-white bg-gradient-to-b from-rose-500 to-rose-600
+           hover:from-rose-600 hover:to-rose-700 shadow-soft;
+  }
+  .input {
+    @apply w-full rounded-lg border border-slate-200 dark:border-slate-700
+           bg-white dark:bg-slate-900 px-3 py-2 text-sm
+           placeholder-slate-400 dark:placeholder-slate-500
+           transition-shadow duration-150
+           focus:outline-none focus:border-brand-500 focus:shadow-ring;
+  }
+  .card {
+    @apply bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800
+           rounded-2xl shadow-soft;
+  }
+  .card-elevated {
+    @apply card shadow-card;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
+           ring-1 ring-inset;
+  }
+  .badge-free  { @apply badge bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800; }
+  .badge-used  { @apply badge bg-blue-50 text-blue-700 ring-blue-200/60 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-800; }
+  .badge-rsv   { @apply badge bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800; }
+  .badge-conf  { @apply badge bg-rose-50 text-rose-700 ring-rose-200/60 dark:bg-rose-900/30 dark:text-rose-300 dark:ring-rose-800; }
+
+  /* Tables */
+  .table-zebra tbody tr:nth-child(even) {
+    @apply bg-slate-50/60 dark:bg-slate-800/30;
+  }
+  .table-zebra tbody tr {
+    @apply transition-colors;
+  }
+  .table-zebra tbody tr:hover {
+    @apply bg-brand-50/60 dark:bg-slate-800/60;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply rounded-md bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100
+           dark:from-slate-800 dark:via-slate-700 dark:to-slate-800
+           bg-[length:200%_100%] animate-shimmer;
+  }
+
+  /* Subtle animated background orbs (used on auth pages) */
+  .auth-bg {
+    background:
+      radial-gradient(60rem 50rem at 110% -10%, rgba(72,101,244,0.10), transparent 60%),
+      radial-gradient(50rem 40rem at -10% 110%, rgba(168,85,247,0.08), transparent 60%),
+      linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  }
+  .dark .auth-bg {
+    background:
+      radial-gradient(60rem 50rem at 110% -10%, rgba(72,101,244,0.18), transparent 60%),
+      radial-gradient(50rem 40rem at -10% 110%, rgba(168,85,247,0.14), transparent 60%),
+      linear-gradient(180deg, #020617 0%, #0f172a 100%);
+  }
+}

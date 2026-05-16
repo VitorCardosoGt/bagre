@@ -1,0 +1,91 @@
+====== Segurança ======
+
+[[tecnico:start|← trilha técnica]]
+
+----
+
+===== Autenticação =====
+
+==== Local (email + senha) ====
+
+  * Hash de senha: **bcrypt** (cost 10), em ''apps/api/src/auth.js''
+  * Token: **JWT HS256** assinado com ''JWT_SECRET'' (env var, ≥ 32 chars). TTL 8h.
+  * Token vai no header ''Authorization: Bearer <token>''.
+  * Login bem-sucedido grava ''lastLoginAt'' e registra ''AuditLog''.
+
+==== Signup público ====
+
+  * Endpoint público ''POST /auth/signup''
+  * Valida domínio do email (env ''SIGNUP_ALLOWED_DOMAINS'', default ''bagre.com.br'')
+  * Cria User com ''role=READER'', ''active=true'', ''mustChangePwd=false''
+  * Retorna token (login automático)
+  * Pode ser desabilitado com ''SIGNUP_ENABLED=false''
+
+==== Reset de senha ====
+
+  * ''POST /auth/reset-request'' sempre retorna 200 (evita user enumeration)
+  * Se o user existe, gera token aleatório (24 bytes hex) com expiração de 1h
+  * Token é **logado no servidor** (sem integração de email no MVP)
+  * Admin coleta do log e entrega ao user, que aplica em ''POST /auth/reset''
+
+==== SSO / OIDC ====
+
+  * Suporta Entra ID (Microsoft) e outros providers OIDC genéricos
+  * Configuração via UI: ''/admin/sso''
+  * Auto-provisiona usuários novos (''role'' default = READER)
+
+----
+
+===== Autorização (RBAC) =====
+
+2 roles:
+
+^ Role   ^ Pode ^
+| ADMIN  | Tudo (CRUD em todas entidades, gerenciar users, configurar integrações) |
+| READER | Apenas leitura (GET em qualquer endpoint protegido) |
+
+**Como é aplicado** — hook global em ''apps/api/src/index.js'':
+
+  - Verifica JWT em **toda** rota ''/api/*'' que não esteja na whitelist ''PUBLIC''
+  - Bloqueia ''POST/PATCH/PUT/DELETE'' para ''role !== ADMIN'', exceto:
+    * ''POST /api/auth/change-password'' (qualquer user troca sua senha)
+    * ''GET /api/auth/me''
+
+→ Adicionar rota nova **NÃO** precisa de guard manual: tudo já é protegido por default.
+
+----
+
+===== Transporte (TLS) =====
+
+  * **HTTPS via nginx no container ''web''**, porta 443
+  * Cert self-signed em ''/etc/nginx/tls/{cert,key}.pem''
+    * Subject: ''CN=10.0.0.10, O=Bagre, OU=IPAM''
+    * SAN: ''IP:10.0.0.10'', ''DNS:your-ipam-host'', ''DNS:localhost''
+    * Validade até 2036
+  * **Porta 80** faz redirect 301 → HTTPS (sem HSTS, por ser self-signed)
+  * **Porta 3001** (API direta) **fechada no host**. API só acessível via nginx 443.
+  * Headers: ''X-Content-Type-Options: nosniff'', ''X-Frame-Options: SAMEORIGIN'', ''Referrer-Policy: strict-origin-when-cross-origin''
+  * Trocar cert: substituir os 2 arquivos em ''infra/tls/'' e ''docker compose restart web''. Sem code change.
+
+----
+
+===== Tokens de serviço =====
+
+  * **''INGEST_TOKEN''** — para Zabbix/scanners chamarem ''/api/ingest/*'' sem JWT (header ''X-Ingest-Token'')
+  * **''ADMIN_TOKEN''** — para o endpoint legacy ''/api/import/seed'' (re-import da planilha via tooling)
+
+Ambos gerados via ''openssl rand -hex 32'' e configurados no ''.env'' da VM.
+
+----
+
+===== Audit log =====
+
+Todas as operações de mutação produzem entry em ''AuditLog'' com:
+
+  * Entity + ID
+  * Action (''create''/''update''/''delete''/''login''/''signup''/''allocate''/''ingest''/...)
+  * Snapshot ''before'' e ''after'' em JSON
+  * Email do actor
+  * Timestamp
+
+Acessível via ''/admin/audit'' (somente ADMIN).

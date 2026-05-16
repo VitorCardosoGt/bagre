@@ -1,0 +1,64 @@
+====== 🔍 Buscar um IP ======
+
+[[operador:start|← trilha operador]]
+
+----
+
+Tem 3 jeitos de encontrar um IP no sistema. Use o que for mais rápido pra você.
+
+===== Jeito 1: Busca global (mais rápido) =====
+
+No topo de qualquer página tem uma **barra de busca**.
+
+  - Digite parte do IP (ex: ''10.150.0.15'')
+  - Ou digite parte do hostname (ex: ''srv-prod'')
+  - Ou digite parte da função (ex: ''gateway'')
+
+Resultados aparecem enquanto você digita. Clique no que quiser para abrir o IP no contexto da sua subnet.
+
+===== Jeito 2: Pela página Sites & Subnets =====
+
+  - Menu lateral → **Sites & Subnets**
+  - Escolha o **site** (ex: SP3-DUO)
+  - Clique numa **subnet** (ex: LAN-PROD)
+  - Você vê uma tabela com todos os IPs daquela subnet
+  - Em cima da tabela tem busca + filtros: **Todos / Em uso / Reservados / Livres**
+
+===== Jeito 3: Pela página Equipamentos =====
+
+Se você quer ver um IP a partir do equipamento que o usa:
+
+  - Menu lateral → **Equipamentos**
+  - Use a busca (por nome, vendor, modelo, responsável)
+  - Clique na linha do equipamento
+  - Aparece um detalhe com **todos os IPs vinculados** ao equipamento
+  - Clique num IP pra ir direto pra subnet dele
+
+----
+
+===== Para quem buscar serve =====
+
+^ Eu quero saber...                          ^ Use ^
+| "Esse IP está livre?"                       | Busca global pelo IP |
+| "Qual o IP do servidor X?"                  | Equipamentos → busca pelo nome |
+| "Quais IPs estão em uso nesta subnet?"      | Sites & Subnets → filtro "Em uso" |
+| "Quais IPs estão livres nesta subnet?"      | Sites & Subnets → filtro "Livres" |
+| "Quem é o responsável por esse equipamento?"| Equipamentos → clica na linha → modal de detalhe |
+| "Quando o Zabbix viu esse host pela última vez?" | Equipamentos → coluna "Última vez visto" |
+
+----
+
+===== O que cada coluna significa =====
+
+Na tabela de IPs de uma subnet:
+
+^ Coluna       ^ O que é ^
+| **Endereço** | O IP em si |
+| **Status**   | Livre / Em uso / Reservado / Conflito |
+| **Equipamento** | Tipo (Servidor Linux, Switch, etc) + OS + vendor (vem do Zabbix se disponível) |
+| **Hostname** | Nome do host |
+| **MAC / Função** | MAC address + função/grupo no Zabbix |
+
+----
+
+  * Próximo: [[operador:alocar-ip|➕ Alocar um IP novo]]

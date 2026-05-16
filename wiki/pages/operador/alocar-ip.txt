@@ -1,0 +1,96 @@
+====== ➕ Alocar um IP novo ======
+
+[[operador:start|← trilha operador]]
+
+> ℹ️ Esta ação requer perfil de Administrador. Se você é "Somente leitura", peça pro Fabricio te promover.
+
+----
+
+===== Cenário típico =====
+
+Você precisa subir um servidor/switch/firewall novo e quer reservar um IP para ele.
+
+===== Passo a passo =====
+
+==== 1. Vá até a subnet certa ====
+
+Menu **Sites & Subnets** → escolha o site (ex: SP3-DUO) → clique na subnet desejada.
+
+==== 2. Clique em "Alocar próximo livre" ====
+
+No topo da tabela aparece um botão azul **"Alocar próximo livre"**. Clica nele e o sistema:
+
+  - Pega automaticamente o primeiro IP **Livre** da subnet
+  - Abre o formulário de alocação **com esse IP já preenchido**
+
+> 💡 Alternativa: você pode escolher um IP específico na tabela — em cada linha **Livre** tem um botão **"Alocar"**.
+
+==== 3. Preencha o formulário ====
+
+O modal tem **dois modos** no topo:
+
+=== Modo "Novo equipamento" ===
+
+Use quando o servidor/equipamento **ainda não existe** no IPAM.
+
+  * **Nome / Hostname** (obrigatório) — ex: ''srv-prod-web-04''
+  * **Tipo** — escolha do dropdown (Servidor Linux, Switch, Roteador, Firewall, Storage, etc — ou "Outro")
+  * **Função / Papel** — ex: ''Web Server'', ''Gateway''
+  * **Vendor** — ex: ''Dell'', ''Cisco''
+  * **Modelo** — ex: ''PowerEdge R740''
+  * **Serial** — se você tem em mãos
+  * **Sistema operacional** — ex: ''Ubuntu 22.04''
+  * **Email do responsável** — quem é dono desse equipamento
+
+=== Modo "Vincular equipamento existente" ===
+
+Use quando o equipamento **já está cadastrado** (ex: um servidor com NIC dupla que vai receber um segundo IP).
+
+  - Busca pelo nome / vendor / modelo
+  - Clica no resultado certo
+  - Pronto
+
+==== 4. Campos extras do IP (opcional) ====
+
+Embaixo, na borda inferior do modal, ainda dá pra preencher:
+
+  * **Hostname (no IP)** — se diferente do nome do equipamento (raro)
+  * **Função (no IP)** — se for diferente da função do equipamento
+  * **MAC Address** — se você tem em mãos
+  * **Notas** — observações livres
+
+> ⚠️ Os campos "Hostname (no IP)" e "Função (no IP)" são herdados do equipamento por padrão. Só preencha se você precisar de algo diferente.
+
+==== 5. Clique em "Alocar IP" ====
+
+O sistema:
+
+  - Cria o equipamento (ou usa o existente)
+  - Marca o IP como **Em uso**
+  - Vincula o IP ao equipamento
+  - Registra a operação na auditoria
+  - Volta pra tabela com o IP atualizado
+
+----
+
+===== O que mudou após alocar =====
+
+^ Antes          ^ Depois ^
+| IP **Livre**, sem dados | IP **Em uso**, hostname + tipo + função preenchidos |
+| Nenhum equipamento ou um existente | Equipamento aparece em **Equipamentos**, com este IP vinculado |
+| Auditoria silenciosa | Entry ''action: allocate'' em **/admin/audit** |
+
+----
+
+===== Liberar um IP (cancelar alocação) =====
+
+Caso o servidor foi desligado ou você alocou errado:
+
+  - Vá até a subnet
+  - Encontre o IP
+  - Clique em **"Liberar"** (botão cinza à direita)
+  - O IP volta pra Livre. O equipamento **continua cadastrado** (não é apagado), só perde o vínculo com este IP.
+
+----
+
+  * Próximo: [[operador:gerenciar-equipamentos|🖥️ Gerenciar equipamentos]]

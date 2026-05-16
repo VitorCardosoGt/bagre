@@ -1,0 +1,61 @@
+# Overlay para subir um Zabbix local de testes ao lado do IPAM.
+# Use:
+#   docker compose -f docker-compose.yml -f docker-compose.zabbix-dev.yml up -d
+#
+# Depois rode: node scripts/seed-zabbix-dev.mjs
+# para popular hosts fictícios que batem com os ranges da planilha.
+#
+# A UI do Zabbix fica em http://localhost:8080 (login: Admin / zabbix).
+# A API do Zabbix em http://localhost:8080/api_jsonrpc.php — use isso na
+# página /admin/integrations/zabbix.
+
+services:
+  zabbix-db:
+    image: postgres:16-alpine
+    container_name: bagre-zabbix-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix
+    volumes:
+      - zabbix_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zabbix"]
+      interval: 5s
+      retries: 10
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
+    container_name: bagre-zabbix-server
+    restart: unless-stopped
+    depends_on:
+      zabbix-db:
+        condition: service_healthy
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix
+    ports:
+      - "10051:10051"
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+    container_name: bagre-zabbix-web
+    restart: unless-stopped
+    depends_on:
+      - zabbix-server
+      - zabbix-db
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: zabbix-db
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix
+      PHP_TZ: America/Sao_Paulo
+    ports:
+      - "8080:8080"
+
+volumes:
+  zabbix_db_data:

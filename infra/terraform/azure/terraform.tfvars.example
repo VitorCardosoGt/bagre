@@ -1,0 +1,14 @@
+# Copie pra terraform.tfvars e ajuste com seus valores reais.
+# Esses defaults são pra demonstração / geração de diagrama via terravision.
+
+subscription_id = "00000000-0000-0000-0000-000000000000"
+location        = "Brazil South"
+project_name    = "bagre"
+environment     = "prod"
+
+tags = {
+  Project    = "bagre"
+  ManagedBy  = "terraform"
+  CostCenter = "infra-sce"
+  Owner      = "admin"
+}

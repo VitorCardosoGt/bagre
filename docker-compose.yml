@@ -1,0 +1,61 @@
+name: bagre    # pino o nome do projeto pra preservar volumes após mover a pasta
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bagre-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bagre
+      POSTGRES_PASSWORD: bagre
+      POSTGRES_DB: bagre
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bagre -d bagre"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    container_name: bagre-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://bagre:bagre@db:5432/bagre?schema=public
+      PORT: 3001
+      NODE_ENV: production
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me}
+      INGEST_TOKEN: ${INGEST_TOKEN:-change-me-ingest}
+      JWT_SECRET: ${JWT_SECRET:-please-change-this-secret-32-chars-min}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@bagre.local}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-admin123}
+      STATS_PUBLIC: ${STATS_PUBLIC:-false}
+    expose:
+      - "3001"
+    volumes:
+      - ./scripts/seed.json:/app/seed.json:ro
+      - ./data:/app/data:ro
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        VITE_API_URL: /api
+    container_name: bagre-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/tls:/etc/nginx/tls:ro
+
+volumes:
+  db_data:

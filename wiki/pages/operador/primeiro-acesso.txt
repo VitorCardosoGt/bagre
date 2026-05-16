@@ -1,0 +1,58 @@
+====== 🔑 Primeiro acesso ======
+
+[[operador:start|← trilha operador]]
+
+----
+
+===== 1. Conectar na VPN =====
+
+  * Abra o **FortiClient** no Windows
+  * Selecione o perfil **Bagre**
+  * Conecte (pode pedir senha ou usar certificado, conforme sua configuração)
+  * Espere o ícone ficar verde
+
+===== 2. Abrir o IPAM =====
+
+No navegador, vá para:
+
+%%https://10.0.0.10%%
+
+> ⚠️ Na primeira vez aparece o aviso **"Sua conexão não é particular"** — isso é normal. Clique em **Avançado** e depois em **Continuar para 10.0.0.10**. Você só vai ver esse aviso uma vez por navegador.
+
+===== 3. Criar sua conta =====
+
+Você verá a tela de **Login**. Como ainda não tem conta:
+
+  - Clique em **"Criar conta"** (embaixo do botão Entrar)
+  - Preencha:
+    * **Nome** — seu nome completo
+    * **E-mail** — seu email corporativo ''@bagre.com.br''
+    * **Senha** — mínimo 8 caracteres
+    * **Confirmar senha** — mesma coisa
+  - Clique em **Criar conta**
+
+Pronto. Você entra automaticamente.
+
+> ℹ️ Sua conta começa como **"Somente leitura"**. Você pode ver tudo (sites, subnets, IPs, equipamentos, catálogos) mas não consegue alterar nada. Peça pro Fabricio promover seu perfil quando precisar editar.
+
+===== 4. Esqueceu a senha? =====
+
+Na tela de login, clique em **"Esqueci a senha"** e preencha seu email. Você receberá orientação por aqui — peça ajuda ao administrador caso o link não chegue.
+
+===== 5. Mudar a sua senha =====
+
+  - Estando logado, clique no seu avatar (canto superior direito)
+  - **Meu perfil**
+  - Lá tem o formulário para alterar a senha
+
+===== 6. Sair =====
+
+  - Clique no seu avatar
+  - **Sair**
+
+----
+
+===== Próximos passos =====
+
+  * [[operador:buscar-ip|Como buscar um IP]]
+  * [[operador:alocar-ip|Como alocar um IP novo]]

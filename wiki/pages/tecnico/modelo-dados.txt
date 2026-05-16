@@ -1,0 +1,142 @@
+====== Modelo de dados ======
+
+[[tecnico:start|← trilha técnica]]
+
+Schema Prisma em ''apps/api/prisma/schema.prisma''. Banco: PostgreSQL 16.
+
+----
+
+===== Entidades principais =====
+
+==== Site ====
+
+Centro/local da rede (datacenter, escritório). 9 registros importados da planilha.
+
+^ Campo      ^ Tipo     ^
+| id         | Int PK   |
+| code       | String unique (ex: SP3-DUO) |
+| name       | String |
+| description| String? |
+
+Relações: ''subnets'' (1:N), ''devices'' (1:N).
+
+==== Subnet ====
+
+Bloco CIDR dentro de um Site. 41 registros.
+
+^ Campo      ^ Tipo ^
+| id         | Int PK |
+| siteId     | Int FK |
+| name       | String |
+| cidr       | String? (ex: 10.150.0.0/24) |
+| cidrLabel  | String? (rótulo bruto da planilha) |
+| vlanId     | Int? |
+
+@@unique([siteId, name]). ''onDelete: Cascade'' — apagar Site apaga subnets e IPs.
+
+==== IpAddress ====
+
+Endereço individual. 10.414 registros (~261 USED, ~10.153 FREE).
+
+^ Campo       ^ Tipo ^
+| id          | Int PK |
+| subnetId    | Int FK (Cascade) |
+| deviceId    | Int? FK → Device (SetNull) |
+| address     | String (ex: 10.150.0.5) |
+| status      | enum FREE \| USED \| RESERVED \| CONFLICT |
+| hostname    | String? |
+| function    | String? |
+| type        | String? (snapshot do Device) |
+| vendor / model / osInfo | snapshots do Device |
+| macAddress  | String? (por interface, fica no IP) |
+| lastSeenAt  | DateTime? (do Zabbix) |
+| lastSeenSource | "zabbix" / "manual" / etc |
+| externalRef | String? ("zabbix:host:1042") |
+
+@@unique([subnetId, address]).
+
+==== Device ====
+
+Equipamento (servidor, switch, firewall, etc). 211 registros, 258 IPs vinculados — alguns Devices têm múltiplos IPs (multi-NIC, HA, VIP).
+
+^ Campo       ^ Tipo ^
+| id          | Int PK |
+| name        | String (hostname canônico) |
+| type        | String? (Servidor Linux, Switch, Firewall, ...) |
+| vendor / model / serial / osInfo | String? |
+| role        | String? (Função/Papel) |
+| siteId      | Int? FK → Site (SetNull) |
+| ownerEmail  | String? |
+| lastSeenAt  | DateTime? |
+| externalRef | String? |
+
+Apagar Device libera os IPs (deviceId fica NULL).
+
+----
+
+===== Catálogos auxiliares =====
+
+==== MasterRange (146) ====
+Ranges mestre da empresa (CIDR + descrição + categoria).
+
+==== EquinixVlan (49) ====
+VLANs do datacenter  (name, vlanId, network, usage, broadcast).
+
+==== AzureSubnet (129) ====
+Vnets/subnets do Azure SCE (name, network, usage, broadcast).
+
+==== FirewallRule (12) ====
+Regras documentadas (direction, src, dst, port, service, protocol).
+
+==== CidrReference ====
+Tabela teórica de prefixos. Read-only.
+
+----
+
+===== Identidade e auditoria =====
+
+==== User ====
+
+^ Campo       ^ Tipo ^
+| email       | unique |
+| passwordHash| bcrypt (null se SSO-only) |
+| role        | enum ADMIN \| READER |
+| active      | Boolean |
+| mustChangePwd | Boolean |
+| authProvider | "local" \| "oidc" |
+| externalId / externalGroups | OIDC |
+| lastLoginAt | DateTime? |
+
+==== AuditLog ====
+
+Cada operação ''create/update/delete/login/signup/allocate'' registra:
+
+^ Campo    ^ Tipo ^
+| entity   | "site", "subnet", "ip", "device", "user", ... |
+| entityId | Int |
+| action   | "create", "update", "delete", "login", ... |
+| before / after | Json? |
+| actor    | email do usuário |
+| createdAt | DateTime |
+
+----
+
+===== Configs single-row =====
+
+Tabelas de 1 linha (id=1) para configuração administrada via UI:
+
+  * ''ZabbixConfig'' — URL, token, intervalo, último sync, status
+  * ''OidcConfig'' — Entra ID / SSO settings
+  * ''PasswordResetToken'' — múltiplas linhas (1 por reset solicitado)
+
+----
+
+===== Diagrama resumido =====
+
+<code>
+Site 1───* Subnet 1───* IpAddress *───1 Device
+                                          └──* (volta pra IpAddress)
+
+User *───1 AuditLog (via actor)
+User 1───* PasswordResetToken
+</code>

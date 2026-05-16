@@ -1,0 +1,123 @@
+====== 📜 Auditoria ======
+
+[[operador:start|← trilha operador]]
+
+> ℹ️ Esta página é só pra Administradores. Se você é READER, vai aparecer "Não autorizado".
+
+----
+
+===== Pra que serve =====
+
+A auditoria é o **histórico imutável** de tudo que aconteceu no sistema. Use quando precisar saber:
+
+  * Quem alterou um IP/equipamento/subnet
+  * O que mudou exatamente (valor antes vs depois)
+  * Quando aconteceu
+  * Por qual sistema (manual, Zabbix sync, signup público, etc)
+
+===== Como acessar =====
+
+Menu lateral → **Auditoria** (em "Admin").
+
+----
+
+===== O que cada coluna significa =====
+
+^ Coluna       ^ O que mostra ^
+| **Data/Hora** | Quando a ação aconteceu (timezone do servidor) |
+| **Entidade** | Que tipo de objeto (site, subnet, ip, device, user, ...) |
+| **ID**       | Identificador único do objeto |
+| **Ação**     | O que foi feito (ver tabela abaixo) |
+| **Ator**     | Email de quem fez (ou "self-service", "zabbix", "ingest") |
+| **Antes/Depois** | Snapshot em JSON do estado antes e depois (quando aplicável) |
+
+----
+
+===== Ações registradas =====
+
+==== Em IPs ====
+
+^ Ação            ^ Significa ^
+| ''create''      | IP foi criado (acontece quando uma subnet é criada) |
+| ''update''      | Algum campo do IP foi editado |
+| ''allocate''    | IP foi atribuído a um equipamento via modal "Alocar" |
+| ''reserve''     | IP marcado como "Reservado" |
+| ''release''     | IP voltou pra "Livre" (todos os dados zerados) |
+| ''ingest''      | Atualizado por sistema externo (ex: Zabbix sync) |
+
+==== Em Devices (equipamentos) ====
+
+^ Ação        ^ Significa ^
+| ''create''  | Equipamento cadastrado |
+| ''update''  | Algum campo do equipamento editado |
+| ''delete''  | Equipamento excluído (os IPs ficam órfãos, sem vínculo) |
+
+==== Em Sites e Subnets ====
+
+^ Ação        ^ Significa ^
+| ''create''  | Site/subnet criada |
+| ''update''  | Campo editado |
+| ''delete''  | Site/subnet apagada (com cascata em IPs!) |
+
+==== Em Users ====
+
+^ Ação                     ^ Significa ^
+| ''create''               | Usuário criado pelo admin |
+| ''signup''               | Usuário se auto-cadastrou via tela pública |
+| ''update''               | Perfil/dados alterados |
+| ''delete''               | Usuário removido |
+| ''login''                | Login bem-sucedido |
+| ''change_password''      | Trocou a própria senha |
+| ''reset_password_apply'' | Aplicou um token de reset |
+
+==== Em Catálogos (Master Range, VLAN, Azure) ====
+
+''create'' / ''update'' / ''delete'' (segue mesmo padrão).
+
+==== Em FirewallRule ====
+
+Idem.
+
+----
+
+===== Cenários típicos =====
+
+==== "Quem alterou esse IP?" ====
+
+  - Vá em **Auditoria**
+  - Filtre **entidade = ''ip''** + **id = (id do IP)**
+  - Você vê todas as operações ordenadas por data, com email do ator
+
+==== "Quem está usando o sistema?" ====
+
+  - Filtre **entidade = ''user''** + **ação = ''login''**
+  - Ordenado por data, mais recente primeiro
+
+==== "O equipamento sumiu — quem apagou?" ====
+
+  - Filtre **entidade = ''device''** + **ação = ''delete''**
+  - O campo **Antes** mostra como era o equipamento antes da exclusão (pode usar pra recadastrar se for o caso)
+
+==== "Houve mudança em massa no último dia?" ====
+
+  - Filtro de data: últimas 24h
+  - Veja se há picos de ação ''ingest'' (provavelmente Zabbix sincronizando) vs operações manuais
+
+----
+
+===== O que **não** está na auditoria =====
+
+  * **Consultas (GET)** — só mutações são logadas. Quem visualizou um IP não fica registrado.
+  * **Failed login attempts** — só logins bem-sucedidos. Tentativas erradas vão pro log do servidor, não pro audit log.
+  * **Operações automáticas internas** do sistema (job scheduler, etc).
+
+----
+
+===== Diferença pra "Última vez visto" =====
+
+  * **Auditoria** = histórico de alterações **no IPAM** (alguém clicou em algo no sistema).
+  * **Última vez visto** (na página Equipamentos / no IP) = quando o Zabbix detectou o host **vivo na rede** (ping/SNMP). Não é alteração — é monitoramento.
+
+Os dois se complementam:
+  * Audit te diz quem cadastrou o servidor X em 2026-04-15
+  * "Última vez visto" te diz que o servidor X foi respondendo até 2026-05-10 e sumiu

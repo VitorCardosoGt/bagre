@@ -1,0 +1,32 @@
+**Bagre**\\
+//Documentação interna//
+
+[[start|🏠 Início]]
+
+===== 🧑‍💻 Trilha Técnica =====
+
+  * [[tecnico:start|📘 Visão geral]]
+  * [[tecnico:arquitetura|🏗️ Arquitetura]]
+  * [[tecnico:diagrama|📊 Diagramas]]
+  * [[tecnico:modelo-dados|🗃️ Modelo de dados]]
+  * [[tecnico:api|🔌 API REST]]
+  * [[tecnico:seguranca|🛡️ Segurança]]
+  * [[tecnico:desenvolvimento|💻 Desenvolvimento]]
+  * [[tecnico:operacao|⚙️ Operação]]
+  * [[tecnico:integracoes|🔗 Integrações]]
+  * [[tecnico:estado-atual|✅ Estado atual]]
+
+===== 👤 Trilha Operador =====
+
+  * [[operador:start|📖 Visão geral]]
+  * [[operador:primeiro-acesso|🔑 Primeiro acesso]]
+  * [[operador:buscar-ip|🔍 Buscar IP]]
+  * [[operador:alocar-ip|➕ Alocar IP]]
+  * [[operador:gerenciar-equipamentos|🖥️ Equipamentos]]
+  * [[operador:catalogos|📋 Catálogos]]
+  * [[operador:auditoria|📜 Auditoria]]
+  * [[operador:faq|❓ FAQ + Glossário]]
+
+----
+
+//Produção:// **SP3 · 10.0.0.10**

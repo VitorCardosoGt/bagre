@@ -1,0 +1,45 @@
+====== Trilha Técnica ======
+
+Para desenvolvedores, infra e administradores do IPAM Bagre.
+
+[[start|← voltar ao portal]]
+
+----
+
+===== Páginas =====
+
+  * **[[tecnico:arquitetura|Arquitetura]]** — stack, containers, organização do código
+  * **[[tecnico:diagrama|Diagramas]]** — topologia, fluxos (login, alocar IP, sync Zabbix), camadas de auth
+  * **[[tecnico:modelo-dados|Modelo de dados]]** — schema Prisma, entidades, relações
+  * **[[tecnico:api|API REST]]** — endpoints, auth, exemplos
+  * **[[tecnico:seguranca|Segurança]]** — JWT, RBAC, HTTPS, signup
+  * **[[tecnico:desenvolvimento|Desenvolvimento]]** — subir local, adicionar rota, adicionar página, convenções
+  * **[[tecnico:operacao|Operação]]** — deploy, backup, logs, troubleshooting
+  * **[[tecnico:integracoes|Integrações]]** — Zabbix, Fortinet, Prometheus
+  * **[[tecnico:estado-atual|Estado atual]]** — o que está em produção e o que está pendente
+
+----
+
+===== Stack resumida =====
+
+^ Camada     ^ Tecnologia ^
+| Backend    | Node 20 + Fastify + Prisma 5 |
+| Banco      | PostgreSQL 16 |
+| Frontend   | React 18 + Vite + Tailwind + React Query |
+| Proxy/TLS  | nginx (no container ''web'') |
+| Orquestração | Docker Compose |
+
+===== Containers em produção =====
+
+^ Container        ^ Imagem               ^ Função ^
+| ''bagre-db''  | postgres:16-alpine   | Banco de dados |
+| ''bagre-api'' | build local (Node 20) | API REST + scheduler Zabbix |
+| ''bagre-web'' | build local (nginx)   | UI estática + proxy ''/api'' |
+
+===== URLs internas (na VPN) =====
+
+^ Endpoint                              ^ Função ^
+| %%https://10.0.0.10%%               | UI |
+| %%https://10.0.0.10/api/health%%    | Health check |
+| %%https://10.0.0.10/metrics%%       | Prometheus metrics |
+| %%http://10.0.0.10%%                | Redirect 301 → HTTPS |

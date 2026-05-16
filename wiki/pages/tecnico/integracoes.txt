@@ -1,0 +1,107 @@
+====== Integrações ======
+
+[[tecnico:start|← trilha técnica]]
+
+----
+
+===== Zabbix =====
+
+==== Modos suportados ====
+
+**Pull** (recomendado) — IPAM faz JSON-RPC no Zabbix periodicamente.
+  * Auth: API Token (Zabbix 5.4+, header ''Authorization: Bearer'') OU user/password (Zabbix antigo)
+  * Endpoint chamado: ''host.get'' com ''selectInterfaces'', ''selectGroups'', ''selectInventory: extend''
+  * Implementação: ''apps/api/src/integrations/zabbix.js''
+
+**Push** (fallback) — Zabbix chama ''POST /api/ingest/discoveries''.
+  * Auth: header ''X-Ingest-Token'' = env ''INGEST_TOKEN''
+  * Útil se a VM IPAM não puder alcançar o Zabbix
+
+==== Configuração via UI ====
+
+  - Logar como ADMIN
+  - Ir em **Admin → Integrações → Zabbix** (''/admin/integrations/zabbix'')
+  - Preencher: URL, API token (ou user/pass), groupFilter (opcional), ''intervalMinutes'' (default 15)
+  - Clicar **Testar conexão**
+  - Marcar **Habilitado** + Salvar
+
+==== O que o sync faz ====
+
+Para cada host no Zabbix:
+
+  - Pra cada interface IPv4, procura ''IpAddress'' no IPAM por ''address''
+  - Atualiza: ''hostname'', ''type'' (inferido), ''macAddress'', ''osInfo'', ''vendor'', ''model''
+  - Marca ''lastSeenAt=now()'', ''lastSeenSource=zabbix'', ''externalRef=zabbix:host:NNN''
+  - ''status=USED'' se ativo, ''RESERVED'' se desabilitado no Zabbix
+  - IPs que existem no Zabbix mas **não** no IPAM viram **"fantasmas"** — listados em ''lastSyncStats.ghosts''
+
+==== Heurística de tipo ====
+
+Ordem de prioridade: ''inventory.type'' → grupos do Zabbix → vendor/OS
+
+^ Sinal                            ^ Type ^
+| ''router'' / group "Router"      | Roteador |
+| ''switch'' / group "Switch"      | Switch |
+| ''firewall'' / vendor Fortinet   | Firewall |
+| ''workstation''                  | Workstation |
+| ''storage''                      | Storage |
+| os contém ''windows''            | Servidor Windows |
+| os contém ''linux/ubuntu/debian/centos/rhel'' | Servidor Linux |
+| vendor Cisco                     | Equipamento Cisco |
+| vendor Mikrotik                  | Equipamento Mikrotik |
+| (fallback)                       | ''inventory.type'' ou "Host" |
+
+----
+
+===== Fortinet (planejado, não implementado) =====
+
+  * Topologia: 1 FortiGate em SP3 (decidido)
+  * Modo: pull via REST API (''GET /api/v2/cmdb/firewall/policy'')
+  * FortiGate vira fonte única — UI ''/firewall'' fica read-only após ativar
+  * Substitui dados manuais atuais de ''FirewallRule''
+
+==== Pré-requisitos a solicitar ====
+
+  - URL base do FortiGate
+  - API Token (perfil read-only)
+  - Versão do FortiOS
+  - Liberação de firewall: VM IPAM → FortiGate:443/tcp
+  - Cert TLS (se HTTPS) — se for CA interna, copiar pra ''/usr/local/share/ca-certificates/''
+
+----
+
+===== Prometheus =====
+
+Endpoint público: %%https://10.0.0.10/metrics%%.
+
+Expõe métricas padrão do Node (event loop lag, GC, etc) + customizadas:
+
+  * ''http_request_duration_seconds'' (por method+route+status)
+  * ''http_requests_total''
+
+==== Scrape config ====
+
+<code>
+scrape_configs:
+  - job_name: 'bagre'
+    metrics_path: '/metrics'
+    scheme: 'https'
+    tls_config:
+      insecure_skip_verify: true  # cert self-signed
+    static_configs:
+      - targets: ['10.0.0.10']
+</code>
+
+----
+
+===== SSO / OIDC (Entra ID) =====
+
+Configurado em ''/admin/sso''. Suporta:
+
+  * URL do issuer
+  * clientId + clientSecret
+  * redirectUri (deve apontar pra %%https://10.0.0.10/api/auth/sso/callback%%)
+  * Mapeamento de groups → role ADMIN
+  * Auto-provision (cria User no primeiro login)
+
+Após habilitar, a tela ''/login'' mostra botão **"Entrar com Microsoft"**.

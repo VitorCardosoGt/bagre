@@ -1,0 +1,52 @@
+====== Trilha Operador ======
+
+Para quem usa o IPAM no dia a dia.
+
+[[start|← voltar ao portal]]
+
+----
+
+===== O que você consegue fazer aqui =====
+
+  * Encontrar um IP rapidamente
+  * Alocar um IP novo pra um servidor/equipamento
+  * Cadastrar e gerenciar seus equipamentos (inventário)
+  * Consultar os catálogos de referência (VLANs, ranges, subnets do Azure)
+  * Acompanhar o que você (e outros) alteraram
+
+===== Páginas =====
+
+  * **[[operador:primeiro-acesso|🔑 Primeiro acesso]]** — como entrar e criar sua conta
+  * **[[operador:buscar-ip|🔍 Como buscar um IP]]** — encontrar quem está usando
+  * **[[operador:alocar-ip|➕ Alocar um IP novo]]** — pegar um IP livre pra um servidor
+  * **[[operador:gerenciar-equipamentos|🖥️ Gerenciar equipamentos]]** — inventário de hosts
+  * **[[operador:catalogos|📋 Catálogos]]** — VLANs, ranges, Azure subnets
+  * **[[operador:auditoria|📜 Auditoria]]** — log de tudo que aconteceu (só admin)
+  * **[[operador:faq|❓ FAQ + Glossário]]** — perguntas comuns e termos técnicos explicados
+
+----
+
+===== Como acessar =====
+
+  - Conectar na **VPN Bagre** (FortiClient)
+  - Abrir %%https://10.0.0.10%% no navegador
+  - Na primeira vez o navegador vai avisar **"Conexão não segura"** — isso é esperado (ainda usamos certificado interno). Clique em **Avançado → Continuar para o site**.
+  - Fazer login ou **Criar conta** (veja [[operador:primeiro-acesso]])
+
+----
+
+===== Cores e ícones que você vai ver =====
+
+^ Cor              ^ O que significa ^
+| 🟢 Verde / "Livre"  | IP disponível pra alocar |
+| 🟡 Amarelo / "Reservado" | IP guardado pra uso futuro |
+| 🔵 Azul / "Em uso" | IP atribuído a um equipamento |
+| 🔴 Vermelho / "Conflito" | Algo está inconsistente (cuidado) |
+
+----
+
+===== Limites do que você pode fazer =====
+
+  * Quando você cria sua conta pela primeira vez, recebe o perfil **"Somente leitura"** — pode ver tudo mas não editar.
+  * Para conseguir alocar/editar, peça pro administrador (Fabricio) **promover sua conta**. É um clique pra ele.
+  * Algumas páginas (Admin → Usuários, Auditoria, SSO) só aparecem se você for administrador.

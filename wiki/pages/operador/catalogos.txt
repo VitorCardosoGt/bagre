@@ -1,0 +1,91 @@
+====== 📋 Catálogos ======
+
+[[operador:start|← trilha operador]]
+
+----
+
+A página **Catálogos** (menu lateral) tem três listas de referência da rede Bagre, importadas da planilha original e agora editáveis no sistema.
+
+===== Quando usar =====
+
+  * Consultar quais ranges/VLANs/subnets a empresa tem documentados
+  * Adicionar uma VLAN nova quando a infra criar
+  * Corrigir uma descrição/categoria que ficou errada na planilha
+  * Aposentar um range que não é mais usado
+
+> ℹ️ Catálogos são **referência** — eles não criam IPs nem subnets automaticamente. Para criar subnets, use a página Sites & Subnets.
+
+----
+
+===== As três abas =====
+
+==== 1. Ranges Mestre ====
+
+Os blocos CIDR principais que a Bagre reserva ou usa, com descrição e categoria (ex: Equinix, Azure, Microsoft, Links).
+
+^ Coluna      ^ Exemplo ^
+| CIDR        | ''10.150.0.0/16'' |
+| Descrição   | "Range principal SP3" |
+| Categoria   | "Equinix" |
+
+==== 2. Equinix VLANs ====
+
+VLANs do datacenter .
+
+^ Coluna      ^ Exemplo ^
+| Nome        | "VLAN-PROD" |
+| VLAN ID     | ''100'' |
+| Network     | ''10.150.0.0/24'' |
+| Range       | ''10.150.0.1 - 10.150.0.254'' |
+| Broadcast   | ''10.150.0.255'' |
+
+==== 3. Azure Subnets ====
+
+Subnets/Vnets do Azure SCE.
+
+^ Coluna      ^ Exemplo ^
+| Nome        | "SubnetWeb" |
+| Network     | ''10.200.0.0/24'' |
+| Range       | ''10.200.0.1 - 10.200.0.254'' |
+| Broadcast   | ''10.200.0.255'' |
+
+----
+
+===== Como usar (Administrador) =====
+
+==== Adicionar ====
+
+  - Clique no botão **"Novo..."** no canto superior direito (ex: "Novo range mestre")
+  - Preencha o formulário (campos obrigatórios marcados com ''*'')
+  - Salva
+
+==== Editar ====
+
+  - Clique no ícone de **lápis** ao final da linha
+  - Modal pré-preenchido abre
+  - Ajuste e salve
+
+==== Excluir ====
+
+  - Clique no ícone de **lixeira** ao final da linha
+  - Confirma o aviso
+  - Pronto — registrado na auditoria
+
+==== Se você é Somente leitura ====
+
+  * Você ainda vê as listas completas e pode consultar tudo
+  * Os botões de Novo / Editar / Excluir simplesmente não aparecem
+  * Para editar, peça pro Fabricio te promover ou peça pra ele fazer a alteração
+
+----
+
+===== Por que isto importa =====
+
+Antes deste sistema, as listas viviam na **planilha** (''Controle de IP - LAN.xlsx''). Para mudar uma VLAN era preciso:
+
+  - Abrir a planilha
+  - Editar manualmente
+  - Salvar e re-importar tudo no IPAM
+  - Risco de inconsistências
+
+Agora você muda **direto na UI** e o sistema mantém histórico no audit log. A planilha pode aposentar.

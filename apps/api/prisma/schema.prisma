@@ -1,0 +1,291 @@
+// Bagre data model
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Site {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subnets     Subnet[]
+  devices     Device[]
+}
+
+model Subnet {
+  id          Int       @id @default(autoincrement())
+  siteId      Int
+  site        Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name        String
+  cidr        String?   // primary CIDR; may be null when source has no mask
+  cidrLabel   String?   // raw range label from spreadsheet
+  vlanId      Int?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  ips         IpAddress[]
+
+  @@unique([siteId, name])
+}
+
+enum IpStatus {
+  FREE
+  USED
+  RESERVED
+  CONFLICT
+}
+
+model IpAddress {
+  id             Int       @id @default(autoincrement())
+  subnetId       Int
+  subnet         Subnet    @relation(fields: [subnetId], references: [id], onDelete: Cascade)
+  deviceId       Int?
+  device         Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  address        String
+  type           String?   // legado: ainda mantido como snapshot no IP. Verdade canônica é Device.type
+  hostname       String?
+  function       String?
+  status         IpStatus  @default(FREE)
+  notes          String?
+  // Enriquecimento (vindo do Zabbix inventory ou input manual)
+  macAddress     String?   // ex: "AA:BB:CC:DD:EE:FF" — por interface, por isso fica no IP
+  osInfo         String?   // legado: snapshot. Verdade canônica é Device.osInfo
+  vendor         String?   // legado: snapshot. Verdade canônica é Device.vendor
+  model          String?   // legado: snapshot. Verdade canônica é Device.model
+  lastSeenAt     DateTime?
+  lastSeenSource String?   // zabbix | nmap-agent | manual | etc
+  externalRef    String?   // e.g. "zabbix:hostid:1042"
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([subnetId, address])
+  @@index([address])
+  @@index([hostname])
+  @@index([macAddress])
+  @@index([lastSeenAt])
+  @@index([deviceId])
+}
+
+model Device {
+  id          Int         @id @default(autoincrement())
+  name        String      // hostname canônico do equipamento
+  type        String?     // "Servidor Linux", "Switch Cisco", "Roteador", etc
+  vendor      String?     // Dell, Cisco, Mikrotik
+  model       String?     // PowerEdge R740, Catalyst 3850
+  serial      String?     // serial number do hardware
+  osInfo      String?     // "Ubuntu 22.04", "Windows Server 2019", "Cisco IOS 15.x"
+  role        String?     // função/papel (Web Server, Gateway, DC, etc)
+  siteId      Int?
+  site        Site?       @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  ownerEmail  String?     // email do responsável pelo equipamento
+  notes       String?
+  lastSeenAt  DateTime?   // visto vivo pela última vez (Zabbix, ping, etc)
+  externalRef String?     // ex: "zabbix:hostid:1042"
+  ips         IpAddress[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([name])
+  @@index([type])
+  @@index([vendor])
+  @@index([siteId])
+  @@index([externalRef])
+}
+
+enum Role {
+  ADMIN
+  READER
+}
+
+model User {
+  id             Int                   @id @default(autoincrement())
+  email          String                @unique
+  name           String?
+  passwordHash   String?               // null for SSO-only users
+  role           Role                  @default(READER)
+  active         Boolean               @default(true)
+  mustChangePwd  Boolean               @default(false)
+  authProvider   String                @default("local") // local | oidc
+  externalId     String?               @unique
+  externalGroups String[]              @default([])
+  lastLoginAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  resetTokens    PasswordResetToken[]
+
+  @@index([authProvider, externalId])
+}
+
+// OIDC settings stored in DB so admins can configure via UI without env vars.
+// Single-row table: always read/write id=1.
+model OidcConfig {
+  id                Int      @id @default(1)
+  enabled           Boolean  @default(false)
+  buttonLabel       String   @default("Entrar com Microsoft")
+  issuerUrl         String?  // e.g. https://login.microsoftonline.com/{tenant}/v2.0
+  clientId          String?
+  clientSecret      String?  // encrypted-at-rest is a future concern; never returned to UI raw
+  redirectUri       String?  // e.g. http://host/api/auth/sso/callback
+  scopes            String   @default("openid profile email")
+  adminGroups       String[] @default([])  // group object IDs that grant ADMIN
+  groupsClaim       String   @default("groups")
+  emailClaim        String   @default("email")
+  nameClaim         String   @default("name")
+  autoProvision     Boolean  @default(true) // create user on first login
+  defaultRole       Role     @default(READER)
+  lastTestedAt      DateTime?
+  lastTestStatus    String?  // ok | error
+  lastTestMessage   String?
+  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  entity    String
+  entityId  Int
+  action    String   // create / update / delete
+  before    Json?
+  after     Json?
+  actor     String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
+
+model MasterRange {
+  id          Int      @id @default(autoincrement())
+  cidr        String
+  description String?
+  category    String?  // Equinix / Azure / Microsoft / Amazon / Links
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([cidr, description])
+}
+
+model EquinixVlan {
+  id        Int      @id @default(autoincrement())
+  name      String
+  vlanId    Int?
+  network   String?
+  usage     String?
+  broadcast String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AzureSubnet {
+  id        Int      @id @default(autoincrement())
+  name      String
+  network   String?
+  usage     String?
+  broadcast String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FirewallRule {
+  id        Int      @id @default(autoincrement())
+  direction String?
+  inIface   String?
+  outIface  String?
+  src       String?
+  dst       String?
+  port      String?
+  service   String?
+  protocol  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Single-row config (id=1) for the Zabbix integration. Admin manages via UI.
+model ZabbixConfig {
+  id              Int       @id @default(1)
+  enabled         Boolean   @default(false)
+  url             String?   // base URL, e.g. https://zabbix.empresa.local
+  apiToken        String?   // Zabbix 5.4+ API token (preferred)
+  username        String?   // fallback for older Zabbix
+  password        String?
+  intervalMinutes Int       @default(15)
+  groupFilter     String[]  @default([])  // host group names; empty = all
+  staleAfterDays  Int       @default(7)
+  // Sync state
+  lastSyncAt      DateTime?
+  lastSyncStatus  String?   // ok | error
+  lastSyncMessage String?
+  lastSyncStats   Json?     // { hosts, ips, ghosts, errors }
+  // Connection test state
+  lastTestedAt    DateTime?
+  lastTestStatus  String?
+  lastTestMessage String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model CidrReference {
+  id            Int    @id @default(autoincrement())
+  prefix        String @unique
+  mask          String?
+  total         Int?
+  usable        Int?
+  networksPer24 String?
+}
+
+enum PendingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Fila de descobertas (Zabbix, scanners, ingest) cujo IP NÃO está em
+// nenhuma subnet cadastrada no IPAM. Admin revisa e aprova/rejeita.
+// IPs em subnets existentes seguem o fluxo automático (não entram aqui).
+model PendingDiscovery {
+  id                  Int           @id @default(autoincrement())
+  source              String        // "zabbix" | "ingest" | "manual"
+  externalRef         String?       // ex: "zabbix:host:1042"
+  address             String        // IPv4 do host descoberto
+  hostname            String?
+  type                String?       // inferido pela heurística (Servidor Linux, etc)
+  vendor              String?
+  model               String?
+  osInfo              String?
+  macAddress          String?
+  function            String?       // groups joined
+  suggestedSubnetCidr String?       // inferido /24 a partir do IP
+  suggestedSiteCode   String?       // (opcional)
+  status              PendingStatus @default(PENDING)
+  occurrences         Int           @default(1)
+  firstSeenAt         DateTime      @default(now())
+  lastSeenAt          DateTime      @default(now())
+  decidedBy           String?       // email do admin
+  decidedAt           DateTime?
+  rejectedReason      String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([source, address])
+  @@index([status])
+  @@index([suggestedSubnetCidr])
+  @@index([address])
+}

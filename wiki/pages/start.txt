@@ -1,0 +1,74 @@
+====== Bagre ======
+
+//Sistema de gestão de endereçamento IP da Bagre Hybrid Cloud ( + Azure SCE). Substitui a planilha **Controle de IP - LAN.xlsx** com uma UI moderna, auditada e integrada.//
+
+===== 📊 Estado atual em produção =====
+
+^ Métrica            ^ Valor       ^
+| Sites              | **9**       |
+| Subnets            | **41**      |
+| IPs                | **10 414**  |
+| Equipamentos       | **211**     |
+| Master ranges      | **146**     |
+| VLANs Equinix      | **49**      |
+| Subnets Azure      | **129**     |
+| Regras de firewall | **12**      |
+
+URL de produção: **https://10.0.0.10** (via VPN Bagre)\\
+Servidor: **your-ipam-host** ·  · Debian 12
+
+----
+
+===== 🧑‍💻 Trilha Técnica =====
+
+//Para desenvolvedores, infra e administradores do IPAM.//
+
+  * Arquitetura, stack e containers
+  * Diagramas de fluxo (login, alocação, sync Zabbix)
+  * Modelo de dados completo (Prisma schema)
+  * Endpoints REST da API com exemplos curl
+  * Deploy, backup, logs, troubleshooting
+  * Integrações: Zabbix, Fortinet, Prometheus, SSO
+
+[[tecnico:start|→ Entrar na trilha técnica]]
+
+----
+
+===== 👤 Trilha Operador =====
+
+//Para quem usa o IPAM no dia a dia.//
+
+  * Primeiro acesso, criar conta, senha
+  * Localizar um IP rapidamente
+  * Alocar um IP novo a um equipamento
+  * Gerenciar o inventário de equipamentos
+  * Consultar catálogos (VLANs, ranges, Azure)
+  * Ler a auditoria + glossário técnico
+
+[[operador:start|→ Entrar na trilha operador]]
+
+----
+
+===== 🚀 O que há de novo =====
+
+  * **Self-signup** público restrito a ''@bagre.com.br''
+  * **HTTPS** com certificado interno
+  * **211 equipamentos** populados via migration a partir dos hostnames existentes
+  * **Modal "Alocar IP"** com vinculação a equipamento (novo ou existente)
+  * **CRUD completo** nos catálogos (Master ranges, Equinix VLANs, Azure subnets)
+  * **Página /devices** com filtros, busca e detalhe com IPs vinculados
+
+Veja **[[tecnico:estado-atual|Estado atual]]** pra o quadro completo + fila pendente.
+
+----
+
+===== ⏳ Próximos passos =====
+
+  - **Zabbix sync** (aguardando URL + API token)
+  - **Fortinet sync** (1 FortiGate SP3, aguardando dados)
+  - **Cert TLS** da CA interna Bagre (substitui o self-signed)
+  - **Ambiente de dev** local com hot reload
+
+----
+
+//Bagre · IPAM · Documentação interna · 2026-05-12//

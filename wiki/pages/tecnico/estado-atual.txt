@@ -1,0 +1,88 @@
+====== Estado atual ======
+
+[[tecnico:start|← trilha técnica]]
+
+Atualizado em **2026-05-12**.
+
+----
+
+===== Em produção em SP3 =====
+
+==== Stack & dados ====
+
+  * 3 containers UP: ''bagre-db'' (Postgres 16, healthy), ''bagre-api'', ''bagre-web''
+  * URL: %%https://10.0.0.10%% (cert self-signed, válido até 2036)
+  * Dados importados da planilha:
+    * 9 sites
+    * 41 subnets
+    * 10.414 IPs (~261 em uso, ~10.153 livres)
+    * 146 master ranges
+    * 49 Equinix VLANs
+    * 129 Azure subnets
+    * 12 firewall rules
+  * 211 Devices populados via migration (agrupando IPs por hostname)
+  * 258 IPs vinculados a Devices
+
+==== Funcionalidades ativas ====
+
+  * **Autenticação**: login local + signup (''@bagre.com.br'') + reset por token + SSO OIDC configurável
+  * **RBAC**: ADMIN/READER por design global
+  * **HTTPS**: nginx 443 com cert self-signed + redirect 80→443
+  * **Sites & Subnets**: CRUD completo via UI
+  * **IPs**: edição inline (cell-by-cell) + status FREE/USED/RESERVED/CONFLICT
+  * **Alocação de IP**: botão "Alocar próximo livre" + botão "Alocar" em IPs FREE, abre modal com:
+    * Toggle "Novo equipamento" vs "Vincular existente"
+    * Dropdown de tipos comuns
+    * Todos os campos do Device
+  * **Equipamentos (''/devices'')**: lista, busca, filtros (site/tipo), criar/editar/excluir, modal de detalhe com IPs vinculados
+  * **Catálogos editáveis** (''/catalogs''): Master Ranges, Equinix VLANs, Azure Subnets — CRUD completo
+  * **Firewall**: CRUD manual (será substituído quando Fortinet integration entrar)
+  * **Audit log** completo em todas as operações de mutação
+  * **Métricas Prometheus** em ''/metrics''
+  * **Scheduler Zabbix** rodando (aguardando configuração via UI)
+
+==== Endpoints de API ====
+
+  * ''/api/auth/*'' (login, signup, me, change-password, reset, sso/*)
+  * ''/api/sites'' (CRUD), ''/api/subnets'' (CRUD + next-free-ip + ips)
+  * ''/api/ips/:id'' (PATCH, release, reserve, allocate)
+  * ''/api/devices'' (CRUD com filtros + detalhe com IPs)
+  * ''/api/master-ranges'', ''/api/equinix-vlans'', ''/api/azure-subnets'' (CRUD)
+  * ''/api/firewall-rules'' (CRUD)
+  * ''/api/users'' (CRUD admin) + ''/api/audit''
+  * ''/api/health'', ''/api/config'', ''/api/stats'' (env-gated), ''/metrics''
+  * ''/api/ingest/discoveries'' + ''/api/ingest/heartbeat'' (token próprio)
+
+----
+
+===== Pendente =====
+
+==== Aguardando ação externa ====
+
+  * **Zabbix sync** — aguardando URL + API token (você vai pegar com o admin do Zabbix). Veja [[tecnico:integracoes#Zabbix|seção Zabbix]].
+  * **Fortinet sync** — aguardando URL + API token + liberação de firewall (1 FortiGate em SP3). Veja [[tecnico:integracoes#Fortinet|seção Fortinet]].
+  * **Cert TLS válido** (não self-signed) — quando a CA interna Bagre emitir, substituir os 2 arquivos em ''infra/tls/'' e ''docker compose restart web''.
+
+==== Melhorias planejadas ====
+
+  * **Ambiente de dev local** com hot reload (''docker-compose.dev.yml'' + stages ''dev'' nos Dockerfiles + ajuste no ''vite.config'')
+  * **CIDR Reference** editável (hoje só read-only) — talvez não vale a pena, é tabela teórica
+  * **Página de inventário/exportação** (CSV/Excel) pra reporting executivo
+  * **Notificações** de sync falho do Zabbix (email/Slack)
+  * **Backup retention policy** (hoje só script local; falta upload pra cloud storage)
+
+==== Drift conhecido ====
+
+  * ''CLAUDE.md'' menciona "Postgres 15" mas o ''docker-compose.yml'' usa ''postgres:16-alpine''.
+  * ''infra/deploy.sh'' tem ''REPO_URL'' apontando pra um repo errado (''fabricio-cruz/bagre.git'' vs ''fabgcruz/ipam''). Não é usado no fluxo atual (deploy é via tar), mas vale corrigir.
+
+----
+
+===== Histórico recente =====
+
+  * **2026-05-11** — Deploy inicial em SP3 (3 containers, dados importados)
+  * **2026-05-11** — Self-signup público implementado
+  * **2026-05-11** — HTTPS via nginx (cert self-signed)
+  * **2026-05-12** — Onda 1-3 Device: schema + migration (211 devices criados) + API CRUD + Modal "Alocar IP"
+  * **2026-05-12** — CRUD em Catálogos (master-ranges, equinix-vlans, azure-subnets)
+  * **2026-05-12** — Página ''/devices'' dedicada com filtros e detalhe

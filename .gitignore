@@ -1,0 +1,32 @@
+node_modules
+.env
+*.log
+dist
+build
+.DS_Store
+apps/api/.prisma
+apps/api/prisma/migrations
+apps/web/dist
+
+# Claude local config
+.claude/
+
+# Dados sensíveis — planilhas/inventários reais não vão para o repo opensource
+data/*.xlsx
+data/*.xlsm
+data/*.csv
+!data/example.xlsx
+
+# Terraform
+**/.venv/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# TLS certs (gerados em deploy time, fora do git)
+infra/tls/
+
+# Wiki seeds (pages + conf) ficam versionados em wiki/
+# Volume runtime fica no Docker, fora do repo

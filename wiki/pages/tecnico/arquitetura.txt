@@ -1,0 +1,73 @@
+====== Arquitetura ======
+
+[[tecnico:start|← trilha técnica]]
+
+----
+
+===== Visão de alto nível =====
+
+3 containers orquestrados via Docker Compose em uma única VM no :
+
+  * **''bagre-db''** — PostgreSQL 16, dados em volume nomeado ''bagre_db_data''
+  * **''bagre-api''** — Fastify + Prisma, expõe ''/api/*'' e ''/metrics''. Acessível **somente** pela rede interna do Docker (porta ''3001'' não está mapeada no host)
+  * **''bagre-web''** — nginx serve o build estático do React **e** faz proxy ''/api/* → api:3001''. Único container acessível de fora (portas 80 e 443)
+
+===== Fluxo de uma requisição =====
+
+<code>
+Browser (https://10.0.0.10)
+  └─► nginx [443 TLS]                                    (container web)
+        ├─► serve /usr/share/nginx/html/* (SPA)
+        └─► proxy_pass http://api:3001/api/*             (container api)
+              └─► Fastify (JWT verify)
+                    └─► Prisma → PostgreSQL [5432]       (container db)
+</code>
+
+===== Layout do código =====
+
+<code>
+ipam/
+├── apps/
+│   ├── api/                       Backend
+│   │   ├── prisma/schema.prisma   Modelo de dados
+│   │   ├── src/
+│   │   │   ├── index.js           Bootstrap Fastify + JWT global guard
+│   │   │   ├── auth.js            bcrypt, JWT, requireAuth/Admin
+│   │   │   ├── db.js              PrismaClient singleton
+│   │   │   ├── routes/            sites, subnets, ips, devices, users, auth, ...
+│   │   │   ├── integrations/      zabbix.js (scheduler)
+│   │   │   └── ...
+│   │   ├── scripts/               migrate-devices.js (one-shot)
+│   │   └── Dockerfile
+│   └── web/                       Frontend
+│       ├── src/
+│       │   ├── pages/             Dashboard, Sites, SubnetDetail, Devices, ...
+│       │   ├── components/        Modais, layout, search global
+│       │   ├── auth/AuthContext.jsx
+│       │   ├── api.js             Cliente HTTP único
+│       │   └── App.jsx            Rotas
+│       ├── nginx.conf             Proxy + TLS
+│       └── Dockerfile
+├── docker-compose.yml             Stack prod
+├── infra/                         Scripts deploy/backup/runbook SP3
+├── data/                          Planilha origem ''Controle de IP - LAN.xlsx''
+└── scripts/                       extract_xlsx.py + seed.json
+</code>
+
+===== Proteção global (auth) =====
+
+''apps/api/src/index.js'' instala um hook ''onRequest'' que:
+
+  - Pula URLs em ''PUBLIC'' (whitelist: ''/api/health'', ''/api/config'', ''/api/auth/login'', ''/api/auth/signup'', ''/api/auth/reset-request'', ''/api/auth/reset'', ''/api/auth/sso/start'', ''/api/auth/sso/callback'', ''/api/import/seed'', ''/api/ingest/*'', ''/metrics'')
+  - Faz ''jwtVerify()'' no token Bearer
+  - Carrega ''User'' do banco (verifica ''active'')
+  - Bloqueia métodos de escrita (''POST/PATCH/PUT/DELETE'') para perfis ''!= ADMIN'', **exceto** ''/api/auth/change-password'' e ''/api/auth/me''
+
+→ READER é read-only **por design global**, sem precisar pingar isso em cada rota.
+
+===== Endpoints especiais =====
+
+  * **''/api/ingest/*''** — usam token próprio (header ''X-Ingest-Token'' = env ''INGEST_TOKEN''). Para tooling externo (Zabbix push, scanners). Não usam JWT.
+  * **''/api/stats''** — env-gated: protegido por default; vira público se ''STATS_PUBLIC=true'' (debug only).
+
+→ Veja [[tecnico:api|API REST]] e [[tecnico:seguranca|Segurança]].
