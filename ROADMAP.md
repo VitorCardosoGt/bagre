@@ -122,21 +122,41 @@ Posicionar o Bagre como first-class citizen na stack moderna:
 
 **Saída desta fase**: Bagre 0.8.0 — "consumível por Terraform/K8s/DNS".
 
-### Phase 3 — Polish & Production (Q1 2027)
+### Phase 2.5 — Multi-cloud sync (Q1 2027) 🌟
+
+Maior diferenciador competitivo do projeto. Bagre vira fonte única de
+verdade multi-cloud + on-prem, com FinOps angle direto (ROI mensurável).
+
+- 🔲 [#18](https://github.com/fabgcruz/bagre/issues/18) Arquitetura comum multi-cloud (umbrella)
+- 🔲 [#19](https://github.com/fabgcruz/bagre/issues/19) AWS sync — VPC, ENIs, Elastic IPs
+- 🔲 [#20](https://github.com/fabgcruz/bagre/issues/20) Azure sync — VNets, NICs, Public IPs
+- 🔲 [#21](https://github.com/fabgcruz/bagre/issues/21) GCP sync — VPC, Compute, External IPs
+- 🔲 [#22](https://github.com/fabgcruz/bagre/issues/22) FinOps — detectar IPs públicos sem uso, relatório de waste
+
+**Saída desta fase**: Bagre 0.9.0 — "ferramenta única para gestão de IPs
+em ambientes híbridos AWS + Azure + GCP + on-prem, com detecção
+automática de waste cloud (ROI direto)".
+
+**Por que separamos em uma phase**: cloud sync é o "killer feature" do
+projeto e merece um marco visível. Pode ser entregue feature-by-feature
+(AWS primeiro, Azure segundo, GCP por último é uma ordem razoável) sem
+bloquear releases.
+
+### Phase 3 — Polish & Production (Q2 2027)
 
 Refinos para uso em produção corporativa:
 
 - Approval workflow (requisição → aprovação → alocação)
 - API tokens com scope (read-only, per-site, per-range)
-- i18n (PT-BR + EN + ES no minimum)
+- i18n (PT-BR + EN + ES no mínimo)
 - Dark mode
 - OpenTelemetry tracing nativo
-- Cloud sync — AWS VPC + Azure VNet
 - Tagging system com RBAC por tag
+- Hardening (rate limit, audit log para SIEM)
 
 **Saída desta fase**: **Bagre 1.0.0** — recomendado para produção.
 
-### Phase 4+ — Ecosystem (Q2 2027 em diante)
+### Phase 4+ — Ecosystem (Q3 2027 em diante)
 
 Expansão guiada por comunidade:
 
@@ -148,8 +168,9 @@ Expansão guiada por comunidade:
 - Plugin system para extensões em JS
 - Federation — múltiplos Bagres comunicando
 - Network topology graph
-- Mais providers DNS (Cloudflare, Azure DNS, TechnitiumDNS)
-- Mais providers cloud (GCP, Hetzner, DigitalOcean)
+- Mais providers DNS (Cloudflare avançado, Azure DNS detalhado, TechnitiumDNS)
+- Mais providers cloud (Hetzner, DigitalOcean, OCI Oracle, Vultr)
+- Event-driven cloud sync (EventBridge / Event Grid / Pub/Sub → webhook Bagre)
 
 ---
 
