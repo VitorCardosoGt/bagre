@@ -36,10 +36,9 @@ services:
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@bagre.local}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-admin123}
       STATS_PUBLIC: ${STATS_PUBLIC:-false}
-    expose:
-      - "3001"
+    ports:
+      - "3001:3001"
     volumes:
-      - ./scripts/seed.json:/app/seed.json:ro
       - ./data:/app/data:ro
 
   web:
@@ -52,10 +51,7 @@ services:
     depends_on:
       - api
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./infra/tls:/etc/nginx/tls:ro
+      - "3000:80"
 
 volumes:
   db_data:

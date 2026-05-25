@@ -43,7 +43,7 @@ sensíveis, detectando tudo ao seu redor. O Bagre IPAM segue a mesma lógica:
 Requisitos: Docker + Docker Compose plugin.
 
 ```bash
-git clone https://github.com/SEU-USUARIO/bagre.git
+git clone https://github.com/fabgcruz/bagre.git
 cd bagre
 
 cp .env.example .env

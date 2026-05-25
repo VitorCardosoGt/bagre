@@ -5,7 +5,7 @@
 //
 // Default path: /app/seed.json (mounted in docker-compose)
 
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { prisma } from './db.js';
 
 const CIDR_RE = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2})/;
@@ -43,6 +43,17 @@ export async function runImport(path = '/app/seed.json', { ifEmpty = false } = {
     if (existing > 0) {
       console.log(`Import skipped: ${existing} site(s) already in DB.`);
       return { skipped: true, existingSites: existing };
+    }
+    let s;
+    try {
+      s = await stat(path);
+    } catch {
+      console.log(`Import skipped: no seed file at ${path}.`);
+      return { skipped: true, reason: 'no-seed-file' };
+    }
+    if (!s.isFile()) {
+      console.log(`Import skipped: ${path} is not a file (likely an empty bind mount).`);
+      return { skipped: true, reason: 'not-a-file' };
     }
   }
   const raw = await readFile(path, 'utf8');
