@@ -173,9 +173,9 @@ main{flex:1;min-width:0;display:flex}
 <div id="app">
 <aside>
   <div class="brand">
-    <div class="logo">D</div>
+    <div class="logo">B</div>
     <div class="text">
-      <div class="t1"><b>Duo</b>system</div>
+      <div class="t1">Bagre</div>
       <div class="t2">Documentação · IPAM</div>
     </div>
   </div>

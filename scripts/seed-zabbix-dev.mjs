@@ -51,34 +51,34 @@ const HOSTS = [
   },
   // ---- Switch core ----
   {
-    ip: '10.150.20.10', name: 'sw-rack-duo-01', group: 'Network',
+    ip: '10.150.20.10', name: 'sw-rack-a-01', group: 'Network',
     os: 'Cisco IOS 17.6', vendor: 'Cisco', model: 'Catalyst 9300',
     type: 'Switch', mac: 'F4:1F:C2:AB:CD:01',
   },
   // ---- Roteador / Firewall ----
   {
-    ip: '10.230.1.1', name: 'fw-duo-edge-01', group: 'Network',
+    ip: '10.230.1.1', name: 'fw-edge-01', group: 'Network',
     os: 'FortiOS 7.4', vendor: 'Fortinet', model: 'FortiGate 100F',
     type: 'Firewall', mac: '00:09:0F:AA:BB:01',
   },
   {
-    ip: '10.230.1.50', name: 'srv-duo-mgmt', group: 'Management',
+    ip: '10.230.1.50', name: 'srv-mgmt', group: 'Management',
     os: 'Ubuntu 22.04 LTS', vendor: 'Dell', model: 'PowerEdge R650',
     type: 'Servidor', mac: '00:1A:A0:77:88:01',
   },
   {
-    ip: '10.230.1.51', name: 'srv-duo-monitoring', group: 'Management',
+    ip: '10.230.1.51', name: 'srv-monitoring', group: 'Management',
     os: 'Ubuntu 22.04 LTS', vendor: 'Dell', model: 'PowerEdge R650',
     type: 'Servidor', mac: '00:1A:A0:77:88:02',
   },
   // ---- App / DB ----
   {
-    ip: '10.230.2.10', name: 'srv-duo-prd-app', group: 'Production',
+    ip: '10.230.2.10', name: 'srv-prd-app', group: 'Production',
     os: 'Ubuntu 22.04 LTS', vendor: 'Dell', model: 'PowerEdge R740',
     type: 'Servidor', mac: '00:1A:A0:99:00:01',
   },
   {
-    ip: '10.230.2.11', name: 'srv-duo-prd-db', group: 'Production',
+    ip: '10.230.2.11', name: 'srv-prd-db', group: 'Production',
     os: 'Red Hat Enterprise Linux 9', vendor: 'HP', model: 'ProLiant DL380',
     type: 'Servidor', mac: '00:25:B5:99:00:02',
   },

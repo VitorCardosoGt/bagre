@@ -14,7 +14,7 @@ Centro/local da rede (datacenter, escritório). 9 registros importados da planil
 
 ^ Campo      ^ Tipo     ^
 | id         | Int PK   |
-| code       | String unique (ex: SP3-DUO) |
+| code       | String unique (ex: SP3) |
 | name       | String |
 | description| String? |
 

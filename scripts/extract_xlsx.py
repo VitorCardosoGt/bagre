@@ -18,16 +18,12 @@ OUT = ROOT / "scripts" / "seed.json"
 
 # Per-site sheets contain horizontally-stacked subnets.
 # Each subnet block is 4 columns (IP / TIPO / HOSTNAME / FUNÇÃO) followed by 1 blank column.
+# Defaults; adjust to the sheet names present in your XLSX.
 LAN_SHEETS = [
-    "LAN-DUO",
-    "LAN-MO",
-    "BAGRE-SP3",
-    "SIRESP_SP-SP3",
-    "CORE_MT-SP3",
-    "SALUX_AM-SP3",
-    "RACK_DUO-SP3",
-    "NOVA LIMA_MG-SP3",
-    "MARANHÃO_MA-SP3",
+    "LAN-MAIN",
+    "LAN-BRANCH",
+    "CORE-SP3",
+    "RACK-A-SP3",
 ]
 
 # Sheets used for VLAN/range master data.
@@ -53,7 +49,7 @@ def clean(v):
 def parse_lan_sheet(ws, site_code):
     """A LAN sheet has up to 5 horizontally-stacked subnet blocks.
 
-    - Row 2:  block title (e.g. "CONTROLE DE IP - LAN-DUO-HA")
+    - Row 2:  block title (e.g. "CONTROLE DE IP - LAN-MAIN-HA")
     - Row 3:  range string (e.g. "RANGE - 10.230.0.0/28 e 10.230.0.17/28")
     - Row 6:  column headers (IP | TIPO | HOSTNAME | FUNÇÃO)
     - Row 7+: data

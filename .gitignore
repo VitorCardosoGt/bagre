@@ -8,8 +8,6 @@ apps/api/.prisma
 apps/api/prisma/migrations
 apps/web/dist
 
-# Claude local config
-.claude/
 
 # Dados sensíveis — planilhas/inventários reais não vão para o repo opensource
 data/*.xlsx

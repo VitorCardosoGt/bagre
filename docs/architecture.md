@@ -110,7 +110,7 @@ graph LR
 
 ### Quando algo da arquitetura muda
 
-1. Você (ou Claude) altera o código da arquitetura (novo container, nova rota pública, nova integração).
+1. Você altera o código da arquitetura (novo container, nova rota pública, nova integração).
 2. Atualiza o diagrama Mermaid correspondente neste arquivo.
 3. PR inclui o diff do diagrama na descrição.
 
@@ -123,8 +123,8 @@ Quando o IPAM (ou outras frentes — Tele\*, Hub-Spoke) tiver Terraform versiona
 pip install terravision
 terravision draw -s infra/terraform/
 
-# OU Mermaid simplificado via Claude
-# (Claude lê os .tf e atualiza este architecture.md)
+# OU Mermaid simplificado gerado manualmente / via script
+# (qualquer ferramenta que leia os .tf e atualize este architecture.md)
 ```
 
 ### Convenção de tipos de diagrama

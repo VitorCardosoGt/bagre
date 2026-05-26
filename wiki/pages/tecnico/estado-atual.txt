@@ -73,7 +73,7 @@ Atualizado em **2026-05-12**.
 
 ==== Drift conhecido ====
 
-  * ''CLAUDE.md'' menciona "Postgres 15" mas o ''docker-compose.yml'' usa ''postgres:16-alpine''.
+  * ''AGENTS.md'' menciona "Postgres 15" mas o ''docker-compose.yml'' usa ''postgres:16-alpine''.
   * ''infra/deploy.sh'' tem ''REPO_URL'' apontando pra um repo errado (''fabricio-cruz/bagre.git'' vs ''fabgcruz/ipam''). Não é usado no fluxo atual (deploy é via tar), mas vale corrigir.
 
 ----

@@ -14,7 +14,7 @@ Você precisa subir um servidor/switch/firewall novo e quer reservar um IP para 
 
 ==== 1. Vá até a subnet certa ====
 
-Menu **Sites & Subnets** → escolha o site (ex: SP3-DUO) → clique na subnet desejada.
+Menu **Sites & Subnets** → escolha o site (ex: SP3) → clique na subnet desejada.
 
 ==== 2. Clique em "Alocar próximo livre" ====
 

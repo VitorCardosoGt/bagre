@@ -19,7 +19,7 @@ Resultados aparecem enquanto você digita. Clique no que quiser para abrir o IP 
 ===== Jeito 2: Pela página Sites & Subnets =====
 
   - Menu lateral → **Sites & Subnets**
-  - Escolha o **site** (ex: SP3-DUO)
+  - Escolha o **site** (ex: SP3)
   - Clique numa **subnet** (ex: LAN-PROD)
   - Você vê uma tabela com todos os IPs daquela subnet
   - Em cima da tabela tem busca + filtros: **Todos / Em uso / Reservados / Livres**
