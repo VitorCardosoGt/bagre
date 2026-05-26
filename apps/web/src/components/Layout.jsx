@@ -117,12 +117,15 @@ export default function Layout({ children }) {
       <aside className="w-64 shrink-0 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hidden md:flex md:flex-col">
         <div className="px-5 pt-7 pb-5">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-glow">
-              <span className="text-white font-bold">D</span>
-            </div>
+            <img
+              src="/bagre-mascot.png"
+              alt="Bagre"
+              className="w-10 h-10 shrink-0 select-none"
+              draggable="false"
+            />
             <div>
               <div className="text-[15px] font-semibold tracking-tight leading-none">
-                <span className="text-brand-600">Duo</span>system
+                Bagre
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider">
                 IPAM

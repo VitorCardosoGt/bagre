@@ -118,10 +118,10 @@ curl $API/api/sites -H "Authorization: Bearer $TOKEN"
 ```json
 [
   {
-    "id": 1, "code": "LAN-DUO", "name": "LAN-DUO",
+    "id": 1, "code": "SP3", "name": "Data Center SP3",
     "subnets": [
       {
-        "id": 1, "name": "LAN-DUO-HA", "cidr": "10.230.0.0/28",
+        "id": 1, "name": "sp3-prod-srv", "cidr": "10.20.10.0/24",
         "ipCount": 254, "usedCount": 17, ...
       }
     ]

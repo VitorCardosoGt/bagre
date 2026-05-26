@@ -28,5 +28,9 @@ data/*.csv
 # TLS certs (gerados em deploy time, fora do git)
 infra/tls/
 
+# Brand source assets — originais locais; o que vai pro app está em apps/web/public/
+/assets/
+/favicon-*.png
+
 # Wiki seeds (pages + conf) ficam versionados em wiki/
 # Volume runtime fica no Docker, fora do repo

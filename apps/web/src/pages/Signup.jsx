@@ -73,14 +73,14 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center auth-bg p-4">
       <div className="w-full max-w-md animate-slide-up">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow mb-4">
-            <span className="text-white text-xl font-bold">D</span>
-          </div>
-          <div className="text-2xl font-semibold tracking-tight">
-            <span className="text-brand-600">Duo</span>
-            <span>system</span>
-          </div>
-          <div className="text-sm text-slate-500 mt-0.5">Gestão de IPs · IPAM</div>
+          <img
+            src="/bagre-mascot.png"
+            alt="Bagre"
+            className="w-24 h-24 mx-auto mb-3 select-none"
+            draggable="false"
+          />
+          <div className="text-2xl font-semibold tracking-tight">Bagre</div>
+          <div className="text-sm text-slate-500 mt-0.5">IPAM opensource</div>
         </div>
 
         <form onSubmit={onSubmit} className="card-elevated p-7 space-y-5">

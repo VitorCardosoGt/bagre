@@ -82,16 +82,16 @@ Abra **http://localhost:3000** no navegador.
 
 ## Importação inicial da planilha
 
-A planilha original `data/Controle de IP - LAN.xlsx` é importada
-**automaticamente** no primeiro boot, **se o banco estiver vazio**.
+Coloque uma planilha em `data/*.xlsx` (formato esperado documentado em
+`docs/08-desenvolvimento.md`) e ela é importada **automaticamente** no
+primeiro boot, **se o banco estiver vazio**.
 
-A importação cria:
-- 9 Sites (LAN-DUO, LAN-MO, BAGRE-SP3, SIRESP_SP-SP3, CORE_MT-SP3, SALUX_AM-SP3, RACK_DUO-SP3, NOVA LIMA_MG-SP3, MARANHÃO_MA-SP3)
-- 41 Subnets (com CIDR, nome, range)
-- ~10.414 IPs (todos os endereços de cada subnet)
-- 12 Regras de Firewall (Azure-SCE)
-- 49 VLANs Equinix
-- 129 Subnets Azure
+A importação cria, conforme o conteúdo da planilha:
+- Sites (com `code` e `name`)
+- Subnets (com CIDR, nome, range)
+- IPs (todos os endereços de cada subnet)
+- Regras de Firewall (opcional)
+- VLANs e mapeamentos de cloud (opcional)
 - 146 Master Ranges
 - 32 entradas de referência CIDR
 

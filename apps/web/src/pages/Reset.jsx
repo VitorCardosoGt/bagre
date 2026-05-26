@@ -59,9 +59,7 @@ export default function Reset() {
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-2xl font-semibold tracking-tight">
-            <span className="text-brand-600">Duo</span>system
-          </div>
+          <div className="text-2xl font-semibold tracking-tight">Bagre</div>
           <div className="text-sm text-slate-400">IPAM</div>
         </div>
 
