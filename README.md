@@ -5,9 +5,14 @@
 Uma solução leve e poderosa para gerenciar, organizar e monitorar todos os
 IPs da sua rede — de ambientes simples até infraestruturas híbridas complexas.
 
-[![Latest release](https://img.shields.io/github/v/release/fabgcruz/bagre?label=release&color=brand)](https://github.com/fabgcruz/bagre/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/fabgcruz/bagre?label=release&color=blue)](https://github.com/fabgcruz/bagre/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/fabgcruz/bagre/ci.yml?branch=main&label=CI)](https://github.com/fabgcruz/bagre/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/fabgcruz/bagre?style=flat&color=yellow)](https://github.com/fabgcruz/bagre/stargazers)
+[![Issues](https://img.shields.io/github/issues/fabgcruz/bagre)](https://github.com/fabgcruz/bagre/issues)
+[![Contributors](https://img.shields.io/github/contributors/fabgcruz/bagre)](https://github.com/fabgcruz/bagre/graphs/contributors)
+[![Last commit](https://img.shields.io/github/last-commit/fabgcruz/bagre)](https://github.com/fabgcruz/bagre/commits/main)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/fabgcruz/bagre/pulls)
 
 ---
 
