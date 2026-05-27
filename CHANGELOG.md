@@ -10,6 +10,14 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+---
+
+## [0.3.0] — 2026-05-27
+
+**Tema:** Prometheus discovery, hardening de segurança e response à comunidade.
+
+Release que responde aos primeiros feedbacks do lançamento no LinkedIn e endurece os defaults de segurança que estavam frouxos na v0.2.0.
+
 ### Segurança
 - **JWT_SECRET é fail-closed.** API recusa boot se a variável estiver vazia, com menos de 32 chars ou contiver os placeholders de exemplo (`please-change`, `change-me`, `dev-secret`). Tokens forjáveis eram risco real em deploys que esqueciam de configurar.
 - **Senha de bootstrap admin não tem mais fallback hardcoded** (`admin123`). Se `BOOTSTRAP_ADMIN_PASSWORD` não vier do env, uma senha aleatória forte é gerada no primeiro boot e impressa UMA vez no log do container (anote dali). Se vier mas com <10 chars, boot falha.
@@ -17,7 +25,7 @@ Mudanças que estão em `main` e ainda não entraram em release oficial.
 - `.env.example` reescrito com instruções claras de geração de segredos.
 
 ### Adicionado
-- **Prometheus discovery** (#25) — nova integração que consome `GET /api/v1/targets` do Prometheus, extrai IPs/hostnames dos labels (`__address__`, `instance`, `job`), e empurra para o mesmo pipeline de pending discoveries do Zabbix. Auth `none` / `bearer` / `basic`. Página admin em `/admin/integrations/prometheus`, surface no painel "Integrações". Scheduler periódico configurável.
+- **Prometheus discovery** ([#25](https://github.com/fabgcruz/bagre/issues/25)) — nova integração que consome `GET /api/v1/targets` do Prometheus, extrai IPs/hostnames dos labels (`__address__`, `instance`, `job`), e empurra para o mesmo pipeline de pending discoveries do Zabbix. Auth `none` / `bearer` / `basic`. Página admin em `/admin/integrations/prometheus`, surface no painel "Integrações". Scheduler periódico configurável.
 - Pipeline de discovery extraído pra módulo compartilhado (`apps/api/src/integrations/discovery.js`) — qualquer integração futura (SNMP, Nmap, etc) reutiliza `applyDiscoveries(source, items)`.
 - Catálogo de VLANs agora aceita campo `provider` (string livre) — usuário identifica o datacenter/colo (Equinix, Ascenty, ODATA, próprio, etc).
 - Audit log: labels para `datacenter_vlan`, `cloud_account`, `zabbix_config`, `prometheus_config`, `oidc_config`.
@@ -25,20 +33,28 @@ Mudanças que estão em `main` e ainda não entraram em release oficial.
 - Endpoint `GET /api/cloud-accounts/:id/subnets` retornando as subnets sincronizadas de uma conta cloud.
 
 ### Documentação / processo
-- **CONTRIBUTING.md** novo (#4) — fluxo, convenções, onde achar coisas.
-- **SECURITY.md** novo (#5) — política de divulgação privada via GitHub Security Advisories, processo de resposta, boas práticas para operadores.
-- **Issue templates** em `.github/ISSUE_TEMPLATE/` (#6) — formulários estruturados para bug e feature, com links contextuais para Discussions e Security Advisories.
-- **docs.html regenerada** (#3) — versão navegável dos guias `docs/*.md` em um único HTML.
+- **CONTRIBUTING.md** novo ([#4](https://github.com/fabgcruz/bagre/issues/4)) — fluxo, convenções, onde achar coisas.
+- **SECURITY.md** novo ([#5](https://github.com/fabgcruz/bagre/issues/5)) — política de divulgação privada via GitHub Security Advisories, processo de resposta, boas práticas para operadores.
+- **Issue templates** em `.github/ISSUE_TEMPLATE/` ([#6](https://github.com/fabgcruz/bagre/issues/6)) — formulários estruturados para bug e feature, com links contextuais para Discussions e Security Advisories.
+- **docs.html regenerada** ([#3](https://github.com/fabgcruz/bagre/issues/3)) — versão navegável dos guias `docs/*.md` em um único HTML.
 
 ### Mudado
-- **Refactor `EquinixVlan` → `DatacenterVlan`** — o catálogo agora é neutro em relação ao provider de datacenter. Endpoints renomeados de `/api/equinix-vlans` para `/api/datacenter-vlans`, schema model `EquinixVlan` virou `DatacenterVlan` com novo campo `provider`. Importer aceita `datacenter_vlans` (novo) ou `equinix_vlans` (legacy) no seed JSON pra compatibilidade. ([#23](https://github.com/fabgcruz/bagre/issues/23))
+- **Refactor `EquinixVlan` → `DatacenterVlan`** ([#8](https://github.com/fabgcruz/bagre/issues/8) / [#23](https://github.com/fabgcruz/bagre/issues/23)) — catálogo agora é neutro em relação ao provider de datacenter. Endpoints renomeados de `/api/equinix-vlans` para `/api/datacenter-vlans`, schema model `EquinixVlan` virou `DatacenterVlan` com novo campo `provider`. Importer aceita `datacenter_vlans` (novo) ou `equinix_vlans` (legacy) no seed JSON pra compatibilidade.
 - Sidebar reorganizada: "Documentação API" virou item admin (abaixo de Auditoria), "Conexões" voltou a se chamar "Integrações" (agora não confunde porque a doc da API está em seção separada).
 - Rota `/integrations` agora exige perfil ADMIN.
+- **Hero FinOps refatorado para framing de auditoria, não de "celebração".** Três estados explícitos: sem dados (cinza neutro, CTA pra conectar), zero ociosos (verde com nota pra re-sync), N ociosos (âmbar com "avalie caso a caso — alguns são propositais").
+- Sidebar admin agora inclui "Cloud Accounts" entre Integrações e Aprovações.
+
+### Removido
+- **Feature de Firewall Rules** — fora do escopo IPAM (NetBox e ferramentas dedicadas fazem isso melhor). Página, rotas, model `FirewallRule`, importer block, item no menu — tudo apagado. Classificação "Firewall" como tipo de equipamento (FortiGate etc) permanece.
 
 ### Infra
 - `.dockerignore` em `apps/api` e `apps/web` corta context transfer do build (de 24MB pra ~poucos KB), acelera CI.
 - Pipeline CI (GitHub Actions): `apps/api` instala + `prisma generate` + syntax check; `apps/web` instala + `vite build` em PRs e push.
 - Pipeline de publish: workflow `docker-publish.yml` constrói multi-arch (amd64+arm64) e empurra `bagre-api` + `bagre-web` pro Docker Hub a cada GitHub Release publicada. Requer secrets `DOCKERHUB_USERNAME` e `DOCKERHUB_TOKEN`.
+
+### Issues fechadas nesta release
+#1, #2, #3, #4, #5, #6, #7, #8, #19, #22, #23, #25
 
 ---
 
@@ -89,6 +105,7 @@ Versão inicial publicada após o fork pra opensource.
 - Wiki integrada opcional via DokuWiki.
 - ROADMAP público com 4 fases até a 1.0.0.
 
-[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.0
 [0.2.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fabgcruz/bagre/commit/5815508
