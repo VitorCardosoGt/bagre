@@ -63,7 +63,14 @@ export default function App() {
                 <Route path="/catalogs" element={<Catalogs />} />
                 <Route path="/devices" element={<Devices />} />
                 <Route path="/cidr" element={<CidrCalculator />} />
-                <Route path="/integrations" element={<IntegrationDocs />} />
+                <Route
+                  path="/integrations"
+                  element={
+                    <Protected role="ADMIN">
+                      <IntegrationDocs />
+                    </Protected>
+                  }
+                />
                 <Route path="/profile" element={<Profile />} />
                 <Route
                   path="/admin/users"

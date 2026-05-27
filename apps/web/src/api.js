@@ -200,6 +200,8 @@ export const api = {
     request(`/cloud-accounts/${id}/sync`, { method: 'POST' }),
   cloudAccountRuns: (id, limit = 20) =>
     request(`/cloud-accounts/${id}/runs?limit=${limit}`),
+  cloudAccountSubnets: (id) =>
+    request(`/cloud-accounts/${id}/subnets`),
 
   // Cloud FinOps
   cloudIdlePublicIps: () => request('/cloud/finops/idle-public-ips'),

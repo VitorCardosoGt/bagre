@@ -186,4 +186,29 @@ export async function registerCloudAccountRoutes(app) {
     });
     return runs;
   });
+
+  // --- LIST subnets synced from this cloud account ---
+  // Usado pelo catálogo dinâmico (uma aba por cloud account conectado) e por
+  // qualquer cliente que queira ver o que foi importado de um provider específico.
+  app.get('/api/cloud-accounts/:id/subnets', { preHandler: requireAuth }, async (req) => {
+    const id = Number(req.params.id);
+    const subnets = await prisma.subnet.findMany({
+      where: { cloudAccountId: id },
+      include: {
+        site: { select: { id: true, code: true, name: true } },
+        _count: { select: { ips: true } },
+      },
+      orderBy: [{ name: 'asc' }],
+    });
+    return subnets.map((s) => ({
+      id: s.id,
+      name: s.name,
+      cidr: s.cidr,
+      cloudResourceId: s.cloudResourceId,
+      cloudMetadata: s.cloudMetadata,
+      ipCount: s._count.ips,
+      site: s.site,
+      updatedAt: s.updatedAt,
+    }));
+  });
 }

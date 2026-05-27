@@ -10,13 +10,22 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+### Segurança
+- **JWT_SECRET é fail-closed.** API recusa boot se a variável estiver vazia, com menos de 32 chars ou contiver os placeholders de exemplo (`please-change`, `change-me`, `dev-secret`). Tokens forjáveis eram risco real em deploys que esqueciam de configurar.
+- **Senha de bootstrap admin não tem mais fallback hardcoded** (`admin123`). Se `BOOTSTRAP_ADMIN_PASSWORD` não vier do env, uma senha aleatória forte é gerada no primeiro boot e impressa UMA vez no log do container (anote dali). Se vier mas com <10 chars, boot falha.
+- **Defaults removidos do `docker-compose.yml`.** Tokens (`ADMIN_TOKEN`, `INGEST_TOKEN`, `JWT_SECRET`) e senha de admin não têm mais valores padrão inseguros — o operador define no `.env`.
+- `.env.example` reescrito com instruções claras de geração de segredos.
+
 ### Adicionado
 - Catálogo de VLANs agora aceita campo `provider` (string livre) — usuário identifica o datacenter/colo (Equinix, Ascenty, ODATA, próprio, etc).
 - Audit log: labels para `datacenter_vlan` e `cloud_account`.
+- **Catálogos → abas dinâmicas por cloud account conectado.** A aba "Azure Subnets" estática saiu; em seu lugar uma aba por CloudAccount ativo, listando subnets sincronizadas em tempo real (com CIDR, region, contagem de IPs e link direto pra subnet no Bagre). Refresh automático a cada 30s.
+- Endpoint `GET /api/cloud-accounts/:id/subnets` retornando as subnets sincronizadas de uma conta cloud.
 
 ### Mudado
 - **Refactor `EquinixVlan` → `DatacenterVlan`** — o catálogo agora é neutro em relação ao provider de datacenter. Endpoints renomeados de `/api/equinix-vlans` para `/api/datacenter-vlans`, schema model `EquinixVlan` virou `DatacenterVlan` com novo campo `provider`. Importer aceita `datacenter_vlans` (novo) ou `equinix_vlans` (legacy) no seed JSON pra compatibilidade. ([#23](https://github.com/fabgcruz/bagre/issues/23))
-- Sidebar: "Integrações / API" virou "Documentação API" (referência pra devs) e "Integrações" admin virou "Conexões" (status operacional de conexões externas). Nomes anteriores confundiam por começarem iguais.
+- Sidebar reorganizada: "Documentação API" virou item admin (abaixo de Auditoria), "Conexões" voltou a se chamar "Integrações" (agora não confunde porque a doc da API está em seção separada).
+- Rota `/integrations` agora exige perfil ADMIN.
 
 ### Infra
 - `.dockerignore` em `apps/api` e `apps/web` corta context transfer do build (de 24MB pra ~poucos KB), acelera CI.
