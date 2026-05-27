@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Network,
   Database,
-  Shield,
   Calculator,
   Plug,
   Server,
@@ -33,7 +32,6 @@ const NAV_BASE = [
   { to: '/sites', label: 'Sites & Subnets', icon: Network },
   { to: '/devices', label: 'Equipamentos', icon: Server },
   { to: '/catalogs', label: 'Catálogos', icon: Database },
-  { to: '/firewall', label: 'Firewall', icon: Shield },
   { to: '/cidr', label: 'Calculadora CIDR', icon: Calculator },
   { to: '/integrations', label: 'Integrações / API', icon: Plug },
 ];

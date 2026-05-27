@@ -9,7 +9,6 @@ const ENTITY_LABELS = {
   ip: 'IP',
   site: 'Site',
   subnet: 'Subnet',
-  firewall_rule: 'Regra firewall',
   user: 'Usuário',
 };
 const ACTION_LABELS = {

@@ -11,7 +11,6 @@ import { registerSubnets } from './routes/subnets.js';
 import { registerIps } from './routes/ips.js';
 import { registerSearch } from './routes/search.js';
 import { registerCatalogs } from './routes/catalogs.js';
-import { registerFirewall } from './routes/firewall.js';
 import { registerImport } from './routes/import.js';
 import { registerStats } from './routes/stats.js';
 import { registerIngest } from './routes/ingest.js';
@@ -25,6 +24,7 @@ import { registerOidcRoutes } from './routes/oidc.js';
 import { registerZabbixRoutes } from './routes/zabbix.js';
 import { registerNetworkHealthRoutes } from './routes/network-health.js';
 import { registerIntegrationsStatusRoutes } from './routes/integrations-status.js';
+import { registerCloudAccountRoutes } from './routes/cloud-accounts.js';
 import { startScheduler as startZabbixScheduler } from './integrations/zabbix.js';
 
 const PORT = Number(process.env.PORT || 3001);
@@ -119,6 +119,7 @@ async function build() {
   await registerZabbixRoutes(app);
   await registerNetworkHealthRoutes(app);
   await registerIntegrationsStatusRoutes(app);
+  await registerCloudAccountRoutes(app);
   // Background scheduler (non-blocking)
   startZabbixScheduler(app.log).catch((e) => app.log.warn(e, 'zabbix scheduler init failed'));
 
@@ -128,7 +129,6 @@ async function build() {
   await registerIps(app);
   await registerSearch(app);
   await registerCatalogs(app);
-  await registerFirewall(app);
   await registerImport(app);
   await registerIngest(app);
   await registerMetrics(app);

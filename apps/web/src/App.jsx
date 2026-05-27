@@ -7,7 +7,6 @@ import SubnetDetail from './pages/SubnetDetail.jsx';
 import Catalogs from './pages/Catalogs.jsx';
 import Devices from './pages/Devices.jsx';
 import PendingDiscoveries from './pages/PendingDiscoveries.jsx';
-import Firewall from './pages/Firewall.jsx';
 import CidrCalculator from './pages/CidrCalculator.jsx';
 import IntegrationDocs from './pages/IntegrationDocs.jsx';
 import Login from './pages/Login.jsx';
@@ -62,7 +61,6 @@ export default function App() {
                 <Route path="/subnets/:id" element={<SubnetDetail />} />
                 <Route path="/catalogs" element={<Catalogs />} />
                 <Route path="/devices" element={<Devices />} />
-                <Route path="/firewall" element={<Firewall />} />
                 <Route path="/cidr" element={<CidrCalculator />} />
                 <Route path="/integrations" element={<IntegrationDocs />} />
                 <Route path="/profile" element={<Profile />} />

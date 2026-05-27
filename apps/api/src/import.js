@@ -65,7 +65,6 @@ export async function runImport(path = '/app/seed.json', { ifEmpty = false } = {
     masterRanges: 0,
     equinixVlans: 0,
     azureSubnets: 0,
-    firewallRules: 0,
     cidrRefs: 0,
   };
 
@@ -176,25 +175,6 @@ export async function runImport(path = '/app/seed.json', { ifEmpty = false } = {
         },
       });
       stats.azureSubnets++;
-    }
-  }
-
-  if (seed.firewall_rules?.length) {
-    await prisma.firewallRule.deleteMany();
-    for (const r of seed.firewall_rules) {
-      await prisma.firewallRule.create({
-        data: {
-          direction: r.direction || null,
-          inIface: r.in_iface || null,
-          outIface: r.out_iface || null,
-          src: r.src || null,
-          dst: r.dst || null,
-          port: r.port ? String(r.port) : null,
-          service: r.service || null,
-          protocol: r.protocol || null,
-        },
-      });
-      stats.firewallRules++;
     }
   }
 

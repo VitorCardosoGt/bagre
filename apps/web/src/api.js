@@ -183,11 +183,4 @@ export const api = {
   deleteAzureSubnet: (id) => request(`/azure-subnets/${id}`, { method: 'DELETE' }),
 
   cidrReference: () => request('/cidr-reference'),
-
-  firewallRules: () => request('/firewall-rules'),
-  createFirewallRule: (data) =>
-    request('/firewall-rules', { method: 'POST', body: JSON.stringify(data) }),
-  updateFirewallRule: (id, data) =>
-    request(`/firewall-rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  deleteFirewallRule: (id) => request(`/firewall-rules/${id}`, { method: 'DELETE' }),
 };

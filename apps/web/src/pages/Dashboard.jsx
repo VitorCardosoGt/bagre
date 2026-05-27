@@ -7,7 +7,6 @@ import {
   Server,
   Search,
   Calculator,
-  Shield,
   ArrowRight,
 } from 'lucide-react';
 import { api } from '../api.js';
@@ -82,12 +81,6 @@ export default function Dashboard() {
             icon={Calculator}
             title="Calcular subnet/CIDR"
             hint="Quantos IPs cabem em um /24?"
-          />
-          <QuickAction
-            to="/firewall"
-            icon={Shield}
-            title="Regras de firewall"
-            hint="Consultar/editar regras"
           />
           <QuickAction
             to="/integrations"
