@@ -5,7 +5,9 @@
 Uma solução leve e poderosa para gerenciar, organizar e monitorar todos os
 IPs da sua rede — de ambientes simples até infraestruturas híbridas complexas.
 
+[![Latest release](https://img.shields.io/github/v/release/fabgcruz/bagre?label=release&color=brand)](https://github.com/fabgcruz/bagre/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/fabgcruz/bagre?style=flat&color=yellow)](https://github.com/fabgcruz/bagre/stargazers)
 
 ---
 
