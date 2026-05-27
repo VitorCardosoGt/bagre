@@ -55,6 +55,7 @@ const TONE_CLASSES = {
 
 const ENTITY_LABELS = {
   zabbix_config: 'Zabbix',
+  prometheus_config: 'Prometheus',
   oidc_config: 'Microsoft Entra',
   user: 'Login',
 };
@@ -76,6 +77,13 @@ export default function IntegrationsStatus() {
   // Live test (per integration) hits the /test endpoint of each provider.
   const testZabbix = useMutation({
     mutationFn: api.testZabbixConfig,
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['integrations-status'] });
+      r.ok ? toast.success(r.message) : toast.error(r.message);
+    },
+  });
+  const testPrometheus = useMutation({
+    mutationFn: api.testPrometheusConfig,
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['integrations-status'] });
       r.ok ? toast.success(r.message) : toast.error(r.message);
@@ -121,10 +129,12 @@ export default function IntegrationsStatus() {
             integration={i}
             onTest={() => {
               if (i.key === 'zabbix') testZabbix.mutate();
+              else if (i.key === 'prometheus') testPrometheus.mutate();
               else if (i.key === 'oidc') testOidc.mutate();
             }}
             testing={
               (i.key === 'zabbix' && testZabbix.isPending) ||
+              (i.key === 'prometheus' && testPrometheus.isPending) ||
               (i.key === 'oidc' && testOidc.isPending)
             }
           />

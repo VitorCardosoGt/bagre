@@ -224,6 +224,32 @@ model AzureSubnet {
 }
 
 // Single-row config (id=1) for the Zabbix integration. Admin manages via UI.
+// Single-row config (id=1) for the Prometheus discovery integration.
+// Lê /api/v1/targets do Prometheus e cria/atualiza descobertas no Bagre.
+model PrometheusConfig {
+  id              Int       @id @default(1)
+  enabled         Boolean   @default(false)
+  url             String? // base URL, e.g. https://prometheus.empresa.local
+  authType        String    @default("none") // none | bearer | basic
+  bearerToken     String?
+  basicUsername   String?
+  basicPassword   String?
+  intervalMinutes Int       @default(15)
+  jobFilter       String[]  @default([]) // whitelist de jobs do Prometheus (vazio = todos)
+  staleAfterDays  Int       @default(7)
+  // Sync state
+  lastSyncAt      DateTime?
+  lastSyncStatus  String? // ok | error
+  lastSyncMessage String?
+  lastSyncStats   Json?
+  // Connection test state
+  lastTestedAt    DateTime?
+  lastTestStatus  String?
+  lastTestMessage String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
 model ZabbixConfig {
   id              Int       @id @default(1)
   enabled         Boolean   @default(false)

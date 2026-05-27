@@ -6,6 +6,7 @@
 // a "discovery" and pushes them through the existing /api/ingest pipeline.
 
 import { prisma } from '../db.js';
+import { applyDiscoveries } from './discovery.js';
 
 const IPV4_RE = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 let sessionAuth = null;
@@ -183,122 +184,13 @@ export async function fetchHosts(cfg) {
   return { discoveries, hostCount: hosts.length };
 }
 
-// Verifica se o IP é RFC1918 (privado). Filtra hosts públicos do Zabbix
-// pra não poluir a fila de aprovação com monitor de internet.
-function isPrivateIPv4(addr) {
-  const parts = addr.split('.').map((n) => Number(n));
-  if (parts.length !== 4 || parts.some((n) => Number.isNaN(n) || n < 0 || n > 255)) return false;
-  const [a, b] = parts;
-  if (a === 10) return true;
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  if (a === 192 && b === 168) return true;
-  return false;
-}
-
-function suggestSubnet24(addr) {
-  const parts = addr.split('.');
-  if (parts.length !== 4) return null;
-  return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
-}
-
-/** Apply discoveries to IPAM in bulk. Returns counts. */
-export async function applyDiscoveries(discoveries) {
-  const stats = {
-    received: discoveries.length,
-    updated: 0,
-    pendingCreated: 0,
-    pendingUpdated: 0,
-    skippedPublic: 0,
-    skippedNoHostname: 0,
-    ghosts: [],
-    errors: [],
-  };
-  const now = new Date();
-  for (const it of discoveries) {
-    try {
-      // Filtros: IP público OU sem hostname → não entra na fila
-      if (!isPrivateIPv4(it.address)) {
-        stats.skippedPublic++;
-        continue;
-      }
-      if (!it.hostname || !String(it.hostname).trim()) {
-        stats.skippedNoHostname++;
-        continue;
-      }
-
-      const matches = await prisma.ipAddress.findMany({
-        where: { address: it.address },
-      });
-
-      if (matches.length === 0) {
-        // IP não está em nenhuma subnet do IPAM → fila de aprovação
-        const sourceKey = 'zabbix';
-        const pendingData = {
-          source: sourceKey,
-          address: it.address,
-          externalRef: it.externalRef || null,
-          hostname: it.hostname || null,
-          type: it.type || null,
-          vendor: it.vendor || null,
-          model: it.model || null,
-          osInfo: it.osInfo || null,
-          macAddress: it.macAddress || null,
-          function: it.function || null,
-          suggestedSubnetCidr: suggestSubnet24(it.address),
-          lastSeenAt: now,
-        };
-        const existing = await prisma.pendingDiscovery.findUnique({
-          where: { source_address: { source: sourceKey, address: it.address } },
-        });
-        if (existing) {
-          if (existing.status === 'PENDING') {
-            await prisma.pendingDiscovery.update({
-              where: { id: existing.id },
-              data: { ...pendingData, occurrences: { increment: 1 } },
-            });
-            stats.pendingUpdated++;
-          }
-          // Se já foi APPROVED/REJECTED, não mexe (admin já decidiu)
-        } else {
-          await prisma.pendingDiscovery.create({ data: pendingData });
-          stats.pendingCreated++;
-        }
-        stats.ghosts.push(it.address);
-        continue;
-      }
-
-      // IP existe → atualizar (fluxo automático, sem aprovação)
-      const data = {
-        type: it.type || null,
-        hostname: it.hostname || null,
-        function: it.function || null,
-        status: it.status || 'USED',
-        macAddress: it.macAddress || null,
-        osInfo: it.osInfo || null,
-        vendor: it.vendor || null,
-        model: it.model || null,
-        lastSeenAt: now,
-        lastSeenSource: 'zabbix',
-        externalRef: it.externalRef || null,
-      };
-      for (const m of matches) {
-        await prisma.ipAddress.update({ where: { id: m.id }, data });
-      }
-      stats.updated += matches.length;
-    } catch (err) {
-      stats.errors.push({ address: it.address, reason: err.message });
-    }
-  }
-  return stats;
-}
-
 export async function syncFromZabbix(cfg) {
   if (!cfg.enabled) return { skipped: true, reason: 'disabled' };
   if (!isConfigured(cfg)) return { skipped: true, reason: 'incomplete config' };
   const t0 = Date.now();
   try {
     const { discoveries, hostCount } = await fetchHosts(cfg);
-    const stats = await applyDiscoveries(discoveries);
+    const stats = await applyDiscoveries('zabbix', discoveries);
     const result = {
       ok: true,
       durationMs: Date.now() - t0,

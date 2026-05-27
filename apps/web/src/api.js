@@ -130,6 +130,13 @@ export const api = {
   testZabbixConfig: () => request('/admin/zabbix-config/test', { method: 'POST' }),
   syncZabbix: () => request('/admin/zabbix-config/sync', { method: 'POST' }),
 
+  // Prometheus
+  prometheusConfig: () => request('/admin/prometheus-config'),
+  updatePrometheusConfig: (data) =>
+    request('/admin/prometheus-config', { method: 'PATCH', body: JSON.stringify(data) }),
+  testPrometheusConfig: () => request('/admin/prometheus-config/test', { method: 'POST' }),
+  syncPrometheus: () => request('/admin/prometheus-config/sync', { method: 'POST' }),
+
   // Network health
   networkHealth: () => request('/network-health'),
 

@@ -12,6 +12,9 @@ const ENTITY_LABELS = {
   user: 'Usuário',
   datacenter_vlan: 'VLAN DC',
   cloud_account: 'Cloud account',
+  zabbix_config: 'Zabbix',
+  prometheus_config: 'Prometheus',
+  oidc_config: 'Microsoft Entra',
 };
 const ACTION_LABELS = {
   create: 'Criou',

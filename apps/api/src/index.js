@@ -22,11 +22,13 @@ import { registerPendingDiscoveries } from './routes/pending-discoveries.js';
 import { registerAuditRoutes } from './routes/audit.js';
 import { registerOidcRoutes } from './routes/oidc.js';
 import { registerZabbixRoutes } from './routes/zabbix.js';
+import { registerPrometheusRoutes } from './routes/prometheus.js';
 import { registerNetworkHealthRoutes } from './routes/network-health.js';
 import { registerIntegrationsStatusRoutes } from './routes/integrations-status.js';
 import { registerCloudAccountRoutes } from './routes/cloud-accounts.js';
 import { registerCloudFinOpsRoutes } from './routes/cloud-finops.js';
 import { startScheduler as startZabbixScheduler } from './integrations/zabbix.js';
+import { startScheduler as startPrometheusScheduler } from './integrations/prometheus.js';
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -130,12 +132,14 @@ async function build() {
   await registerAuditRoutes(app);
   await registerOidcRoutes(app);
   await registerZabbixRoutes(app);
+  await registerPrometheusRoutes(app);
   await registerNetworkHealthRoutes(app);
   await registerIntegrationsStatusRoutes(app);
   await registerCloudAccountRoutes(app);
   await registerCloudFinOpsRoutes(app);
   // Background scheduler (non-blocking)
   startZabbixScheduler(app.log).catch((e) => app.log.warn(e, 'zabbix scheduler init failed'));
+  startPrometheusScheduler(app.log).catch((e) => app.log.warn(e, 'prometheus scheduler init failed'));
 
   await registerStats(app);
   await registerSites(app);

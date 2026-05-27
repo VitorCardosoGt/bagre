@@ -17,8 +17,10 @@ Mudanças que estão em `main` e ainda não entraram em release oficial.
 - `.env.example` reescrito com instruções claras de geração de segredos.
 
 ### Adicionado
+- **Prometheus discovery** (#25) — nova integração que consome `GET /api/v1/targets` do Prometheus, extrai IPs/hostnames dos labels (`__address__`, `instance`, `job`), e empurra para o mesmo pipeline de pending discoveries do Zabbix. Auth `none` / `bearer` / `basic`. Página admin em `/admin/integrations/prometheus`, surface no painel "Integrações". Scheduler periódico configurável.
+- Pipeline de discovery extraído pra módulo compartilhado (`apps/api/src/integrations/discovery.js`) — qualquer integração futura (SNMP, Nmap, etc) reutiliza `applyDiscoveries(source, items)`.
 - Catálogo de VLANs agora aceita campo `provider` (string livre) — usuário identifica o datacenter/colo (Equinix, Ascenty, ODATA, próprio, etc).
-- Audit log: labels para `datacenter_vlan` e `cloud_account`.
+- Audit log: labels para `datacenter_vlan`, `cloud_account`, `zabbix_config`, `prometheus_config`, `oidc_config`.
 - **Catálogos → abas dinâmicas por cloud account conectado.** A aba "Azure Subnets" estática saiu; em seu lugar uma aba por CloudAccount ativo, listando subnets sincronizadas em tempo real (com CIDR, region, contagem de IPs e link direto pra subnet no Bagre). Refresh automático a cada 30s.
 - Endpoint `GET /api/cloud-accounts/:id/subnets` retornando as subnets sincronizadas de uma conta cloud.
 
