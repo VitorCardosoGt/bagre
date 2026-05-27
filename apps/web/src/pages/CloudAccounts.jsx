@@ -125,43 +125,69 @@ function CopyButton({ text, label = 'Copiar' }) {
   );
 }
 
-function FinOpsHero({ data, isLoading }) {
+function FinOpsHero({ data, isLoading, hasAccounts }) {
   if (isLoading) {
     return <div className="card p-5 mb-6 animate-pulse h-28" />;
   }
   const total = data?.summary?.estimatedMonthlyCostUsd ?? 0;
-  const count = data?.summary?.idleCount ?? 0;
-  const danger = count > 0;
+  const idleCount = data?.summary?.idleCount ?? 0;
+  const totalPublic = data?.summary?.totalPublicIps ?? 0;
+
+  // 1) Sem dados pra auditar (sem conta conectada OU contas sem sync)
+  if (!hasAccounts || totalPublic === 0) {
+    return (
+      <div className="card p-5 mb-6 border-l-4 border-l-slate-300 bg-slate-50/40 dark:bg-slate-800/40">
+        <div className="flex items-center gap-4">
+          <DollarSign size={32} className="text-slate-400" />
+          <div className="flex-1">
+            <div className="text-lg font-semibold">
+              Auditoria de IPs públicos cloud
+            </div>
+            <div className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+              {hasAccounts
+                ? 'Sincronize uma conta cloud (botão Sync agora no card abaixo) para começar a auditar quais IPs públicos podem ser liberados.'
+                : 'Conecte sua primeira conta cloud (AWS / Azure / GCP) para ver todos os IPs públicos alocados e avaliar quais valem manter.'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2) Tem dados, mas nenhum ocioso no momento
+  if (idleCount === 0) {
+    return (
+      <div className="card p-5 mb-6 border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-900/10">
+        <div className="flex items-center gap-4">
+          <DollarSign size={32} className="text-emerald-500" />
+          <div className="flex-1">
+            <div className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+              {totalPublic} IP{totalPublic > 1 ? 's' : ''} público{totalPublic > 1 ? 's' : ''} · nenhum ocioso identificado agora
+            </div>
+            <div className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+              Auditoria concluída na última sync — todos os IPs estão associados a um recurso. Re-sincronize periodicamente para reavaliar à medida que recursos forem desligados.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3) Tem ociosos — exibir pra avaliação
   return (
-    <div
-      className={`card p-5 mb-6 border-l-4 ${
-        danger
-          ? 'border-l-rose-500 bg-rose-50/30 dark:bg-rose-900/10'
-          : 'border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-900/10'
-      }`}
-    >
+    <div className="card p-5 mb-6 border-l-4 border-l-amber-500 bg-amber-50/30 dark:bg-amber-900/10">
       <div className="flex items-center gap-4">
-        <DollarSign size={32} className={danger ? 'text-rose-500' : 'text-emerald-500'} />
+        <DollarSign size={32} className="text-amber-600" />
         <div className="flex-1">
-          {danger ? (
-            <>
-              <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
-                {fmtMoney(total)}<span className="text-sm font-normal text-rose-600/70">/mês desperdiçados</span>
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-                {count} IP{count > 1 ? 's' : ''} público{count > 1 ? 's' : ''} alocado{count > 1 ? 's' : ''} sem uso. Veja a lista abaixo e libere no console da cloud.
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
-                Sem desperdício de IPs públicos
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-                Todos os IPs públicos sincronizados estão associados a recursos ativos.
-              </div>
-            </>
-          )}
+          <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+            {idleCount} IP{idleCount > 1 ? 's' : ''} público{idleCount > 1 ? 's' : ''} ocioso{idleCount > 1 ? 's' : ''}
+            <span className="text-sm font-normal text-amber-700/70 dark:text-amber-300/80 ml-2">
+              · ~{fmtMoney(total)}/mês se mantidos
+            </span>
+          </div>
+          <div className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+            Liste abaixo, avalie caso a caso — alguns IPs ociosos são propositais (reserva de range, DR, contrato com terceiros). Os que não tiverem motivo podem ser liberados no console do provider.
+          </div>
         </div>
       </div>
     </div>
@@ -612,7 +638,7 @@ export default function CloudAccounts() {
     <div>
       <PageHeader
         title="Cloud Accounts"
-        description="Conecte AWS / Azure / GCP e o Bagre importa subnets e IPs automaticamente — incluindo Public IPs ociosos sangrando custo."
+        description="Conecte AWS / Azure / GCP e o Bagre importa subnets e IPs automaticamente. Use a auditoria abaixo para identificar IPs públicos ociosos e decidir o que pode ser liberado."
         actions={
           <button onClick={() => setAddOpen(true)} className="btn-primary inline-flex items-center gap-1.5">
             <Plus size={14} />
@@ -621,7 +647,7 @@ export default function CloudAccounts() {
         }
       />
 
-      <FinOpsHero data={finops} isLoading={finopsLoading} />
+      <FinOpsHero data={finops} isLoading={finopsLoading} hasAccounts={accounts.length > 0} />
       <IdlePublicIpsTable items={finops?.items} />
 
       {accounts.length === 0 ? (
