@@ -91,16 +91,15 @@ A pasta [`docs/`](docs/) contém guias detalhados:
 - [`07-operacao.md`](docs/07-operacao.md) — Backup, restore, troubleshooting
 - [`08-desenvolvimento.md`](docs/08-desenvolvimento.md) — Dev local, contribuir
 
+Versão renderizada em HTML único navegável: [`docs.html`](docs.html) (gerada por `node scripts/build-docs-html.mjs`).
+
 ## Contribuindo
 
-Pull requests e issues são bem-vindos. Antes de mandar um PR:
+Pull requests e issues são bem-vindos. Veja **[CONTRIBUTING.md](CONTRIBUTING.md)** para fluxo, convenções e onde achar coisas.
 
-1. Abra uma issue descrevendo a mudança proposta (especialmente para features grandes)
-2. Para bugs, inclua passos para reproduzir e ambiente (versão Docker, OS, etc.)
-3. Mantenha o estilo de código existente
-4. Adicione testes quando aplicável
+## Segurança
 
-Detalhes em `CONTRIBUTING.md` (em construção).
+Para reportar vulnerabilidade, **NÃO abra issue pública** — use o canal privado descrito em **[SECURITY.md](SECURITY.md)**.
 
 ## Licença
 

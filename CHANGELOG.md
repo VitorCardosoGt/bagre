@@ -22,6 +22,12 @@ Mudanças que estão em `main` e ainda não entraram em release oficial.
 - **Catálogos → abas dinâmicas por cloud account conectado.** A aba "Azure Subnets" estática saiu; em seu lugar uma aba por CloudAccount ativo, listando subnets sincronizadas em tempo real (com CIDR, region, contagem de IPs e link direto pra subnet no Bagre). Refresh automático a cada 30s.
 - Endpoint `GET /api/cloud-accounts/:id/subnets` retornando as subnets sincronizadas de uma conta cloud.
 
+### Documentação / processo
+- **CONTRIBUTING.md** novo (#4) — fluxo, convenções, onde achar coisas.
+- **SECURITY.md** novo (#5) — política de divulgação privada via GitHub Security Advisories, processo de resposta, boas práticas para operadores.
+- **Issue templates** em `.github/ISSUE_TEMPLATE/` (#6) — formulários estruturados para bug e feature, com links contextuais para Discussions e Security Advisories.
+- **docs.html regenerada** (#3) — versão navegável dos guias `docs/*.md` em um único HTML.
+
 ### Mudado
 - **Refactor `EquinixVlan` → `DatacenterVlan`** — o catálogo agora é neutro em relação ao provider de datacenter. Endpoints renomeados de `/api/equinix-vlans` para `/api/datacenter-vlans`, schema model `EquinixVlan` virou `DatacenterVlan` com novo campo `provider`. Importer aceita `datacenter_vlans` (novo) ou `equinix_vlans` (legacy) no seed JSON pra compatibilidade. ([#23](https://github.com/fabgcruz/bagre/issues/23))
 - Sidebar reorganizada: "Documentação API" virou item admin (abaixo de Auditoria), "Conexões" voltou a se chamar "Integrações" (agora não confunde porque a doc da API está em seção separada).

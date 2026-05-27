@@ -1,0 +1,69 @@
+name: Bug report
+description: Reportar comportamento inesperado ou quebrado
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: O que aconteceu
+      description: Descreva o problema observado em uma a três frases.
+      placeholder: Cliquei em X, esperava Y, mas vi Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Como reproduzir
+      description: Passos numerados pra reproduzir do zero.
+      placeholder: |
+        1. `docker compose up -d`
+        2. Login com admin@bagre.local
+        3. Vai em ...
+        4. Erro aparece em ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      description: O que você esperava que acontecesse.
+
+  - type: input
+    id: version
+    attributes:
+      label: Versão do Bagre
+      description: Release ou commit hash (rode `git rev-parse --short HEAD`).
+      placeholder: v0.2.0 ou commit a9682f8
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Como você está rodando
+      options:
+        - docker compose (default)
+        - dev local (apps/api npm run dev + apps/web npm run dev)
+        - outro (descreva no campo de ambiente)
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Ambiente
+      description: OS, Docker version, browser, qualquer detalhe relevante.
+      placeholder: |
+        - OS: macOS 14.5
+        - Docker: 27.4.1
+        - Browser: Chrome 124
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Cole logs relevantes (use ``` para formatar) ou anexe prints.
+      render: shell

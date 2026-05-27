@@ -1,0 +1,57 @@
+name: Feature request
+description: Sugerir uma nova feature ou melhoria
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de abrir: dá uma olhada no [ROADMAP.md](../ROADMAP.md) — a feature pode já estar planejada.
+
+        Descreva o **problema**, não a solução. "Preciso de X porque Y" é melhor que "implementem feature Z".
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual dor você está tentando resolver
+      placeholder: Hoje sempre que preciso fazer X, eu...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta de solução (opcional)
+      description: Se você já pensou em como resolver, descreva. Senão deixe em branco — vamos discutir.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: Workarounds que você usa hoje ou outras tools que resolvem.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Escopo
+      options:
+        - Backend (API / schema / integrações)
+        - Frontend (UI / UX)
+        - DevOps / infra
+        - Documentação
+        - Outro / múltiplos
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: A feature respeita os princípios do projeto?
+      description: Veja [ROADMAP.md](../ROADMAP.md). Marque os que se aplicam.
+      options:
+        - label: "Simples antes de completo"
+        - label: "Cloud-native first"
+        - label: "API-first"
+        - label: "Auditável por design"
+        - label: "Onboarding em minutos"
+        - label: "Sem dependência de SaaS proprietário"

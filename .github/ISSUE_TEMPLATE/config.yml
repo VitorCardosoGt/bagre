@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussion
+    url: https://github.com/fabgcruz/bagre/discussions
+    about: Perguntas abertas, ideias maiores, propostas de design — antes da issue formal.
+  - name: 🔒 Reportar vulnerabilidade de segurança
+    url: https://github.com/fabgcruz/bagre/security/advisories/new
+    about: Use o canal privado de Security Advisories (NÃO abra issue pública).
