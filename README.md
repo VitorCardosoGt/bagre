@@ -25,6 +25,7 @@ sensíveis, detectando tudo ao seu redor. O Bagre IPAM segue a mesma lógica:
 - Catálogo central de sites, sub-redes (CIDR) e endereços IP com auditoria completa
 - Alocação manual ou automática de IPs respeitando o range da sub-rede
 - Importação de inventários existentes (XLSX/CSV)
+- **Cloud sync (AWS)** — conecta sua conta AWS via Access Key ou Assume Role, sincroniza VPCs/subnets/ENIs/Elastic IPs e mostra IPs públicos ociosos sangrando custo (relatório FinOps). Azure e GCP no roadmap.
 - API REST para integração com ferramentas de descoberta (Zabbix, scanners de rede, OTEL)
 - Login local + SSO via OIDC (Microsoft Entra ID, Keycloak, qualquer provider compatível)
 - RBAC com perfis ADMIN/READER e wiki integrada via DokuWiki
