@@ -69,6 +69,15 @@ Abra http://localhost:3000 e faça login com o e-mail/senha definidos no `.env`.
 | Métricas Prometheus | http://localhost:3001/metrics |
 | Health check | http://localhost:3001/api/health |
 
+## Linha do tempo e evolução
+
+- **[CHANGELOG.md](CHANGELOG.md)** — todas as mudanças, versão por versão (features adicionadas, removidas, renomeadas, bugs corrigidos)
+- **[Releases](https://github.com/fabgcruz/bagre/releases)** — versões publicadas com notas, downloads e tags
+- **[ROADMAP.md](ROADMAP.md)** — visão, princípios, fases planejadas até a 1.0.0
+- **[Issues](https://github.com/fabgcruz/bagre/issues)** — backlog público, incluindo sugestões da comunidade
+
+Quem está testando: dá uma olhada no **CHANGELOG** pra acompanhar o que mudou em cada release. Quem quer ajudar a moldar o que vem: as **Issues** estão abertas, opinião informada é o melhor combustível pro projeto.
+
 ## Documentação
 
 A pasta [`docs/`](docs/) contém guias detalhados:

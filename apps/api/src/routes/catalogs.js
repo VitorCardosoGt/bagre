@@ -81,20 +81,21 @@ export async function registerCatalogs(app) {
     return { ok: true };
   });
 
-  // ============ EQUINIX VLANS ============
-  app.get('/api/equinix-vlans', async () => {
-    return prisma.equinixVlan.findMany({ orderBy: { vlanId: 'asc' } });
+  // ============ DATACENTER VLANS ============
+  app.get('/api/datacenter-vlans', async () => {
+    return prisma.datacenterVlan.findMany({ orderBy: [{ provider: 'asc' }, { vlanId: 'asc' }] });
   });
 
-  app.post('/api/equinix-vlans', async (req, reply) => {
-    const { name, vlanId, network, usage, broadcast } = req.body || {};
+  app.post('/api/datacenter-vlans', async (req, reply) => {
+    const { name, provider, vlanId, network, usage, broadcast } = req.body || {};
     if (!name || !String(name).trim()) {
       reply.code(400);
       return { error: 'name é obrigatório' };
     }
-    const created = await prisma.equinixVlan.create({
+    const created = await prisma.datacenterVlan.create({
       data: {
         name: String(name).trim(),
+        provider: provider ? String(provider).trim() : null,
         vlanId: vlanId != null && vlanId !== '' ? Number(vlanId) : null,
         network: network ? String(network).trim() : null,
         usage: usage ? String(usage).trim() : null,
@@ -102,7 +103,7 @@ export async function registerCatalogs(app) {
       },
     });
     await auditFromReq(req, {
-      entity: 'equinix_vlan',
+      entity: 'datacenter_vlan',
       entityId: created.id,
       action: 'create',
       after: created,
@@ -110,21 +111,21 @@ export async function registerCatalogs(app) {
     return created;
   });
 
-  app.patch('/api/equinix-vlans/:id', async (req, reply) => {
+  app.patch('/api/datacenter-vlans/:id', async (req, reply) => {
     const id = Number(req.params.id);
-    const before = await prisma.equinixVlan.findUnique({ where: { id } });
+    const before = await prisma.datacenterVlan.findUnique({ where: { id } });
     if (!before) {
       reply.code(404);
       return { error: 'VLAN não encontrada' };
     }
-    const data = pick(req.body, ['name', 'network', 'usage', 'broadcast']);
+    const data = pick(req.body, ['name', 'provider', 'network', 'usage', 'broadcast']);
     if ('vlanId' in (req.body || {})) {
       const v = req.body.vlanId;
       data.vlanId = v === '' || v == null ? null : Number(v);
     }
-    const after = await prisma.equinixVlan.update({ where: { id }, data });
+    const after = await prisma.datacenterVlan.update({ where: { id }, data });
     await auditFromReq(req, {
-      entity: 'equinix_vlan',
+      entity: 'datacenter_vlan',
       entityId: id,
       action: 'update',
       before,
@@ -133,16 +134,16 @@ export async function registerCatalogs(app) {
     return after;
   });
 
-  app.delete('/api/equinix-vlans/:id', async (req, reply) => {
+  app.delete('/api/datacenter-vlans/:id', async (req, reply) => {
     const id = Number(req.params.id);
-    const before = await prisma.equinixVlan.findUnique({ where: { id } });
+    const before = await prisma.datacenterVlan.findUnique({ where: { id } });
     if (!before) {
       reply.code(404);
       return { error: 'VLAN não encontrada' };
     }
-    await prisma.equinixVlan.delete({ where: { id } });
+    await prisma.datacenterVlan.delete({ where: { id } });
     await auditFromReq(req, {
-      entity: 'equinix_vlan',
+      entity: 'datacenter_vlan',
       entityId: id,
       action: 'delete',
       before,

@@ -63,7 +63,7 @@ export async function runImport(path = '/app/seed.json', { ifEmpty = false } = {
     subnets: 0,
     ips: 0,
     masterRanges: 0,
-    equinixVlans: 0,
+    datacenterVlans: 0,
     azureSubnets: 0,
     cidrRefs: 0,
   };
@@ -146,20 +146,24 @@ export async function runImport(path = '/app/seed.json', { ifEmpty = false } = {
     stats.masterRanges++;
   }
 
-  // Equinix vlans (simple wipe + recreate; small dataset)
-  if (seed.equinix_vlans?.length) {
-    await prisma.equinixVlan.deleteMany();
-    for (const v of seed.equinix_vlans) {
-      await prisma.equinixVlan.create({
+  // Datacenter vlans (simple wipe + recreate; small dataset)
+  // Aceita as duas keys no JSON pra compat com seeds antigos: datacenter_vlans
+  // (novo) ou equinix_vlans (legacy).
+  const dcVlans = seed.datacenter_vlans?.length ? seed.datacenter_vlans : seed.equinix_vlans;
+  if (dcVlans?.length) {
+    await prisma.datacenterVlan.deleteMany();
+    for (const v of dcVlans) {
+      await prisma.datacenterVlan.create({
         data: {
           name: v.name || '(sem nome)',
+          provider: v.provider || null,
           vlanId: typeof v.vlan_id === 'number' ? v.vlan_id : null,
           network: v.network ? String(v.network) : null,
           usage: v.usage || null,
           broadcast: v.broadcast ? String(v.broadcast) : null,
         },
       });
-      stats.equinixVlans++;
+      stats.datacenterVlans++;
     }
   }
 

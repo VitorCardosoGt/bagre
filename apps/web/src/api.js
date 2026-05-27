@@ -168,12 +168,12 @@ export const api = {
     request(`/master-ranges/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteMasterRange: (id) => request(`/master-ranges/${id}`, { method: 'DELETE' }),
 
-  equinixVlans: () => request('/equinix-vlans'),
-  createEquinixVlan: (data) =>
-    request('/equinix-vlans', { method: 'POST', body: JSON.stringify(data) }),
-  updateEquinixVlan: (id, data) =>
-    request(`/equinix-vlans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  deleteEquinixVlan: (id) => request(`/equinix-vlans/${id}`, { method: 'DELETE' }),
+  datacenterVlans: () => request('/datacenter-vlans'),
+  createDatacenterVlan: (data) =>
+    request('/datacenter-vlans', { method: 'POST', body: JSON.stringify(data) }),
+  updateDatacenterVlan: (id, data) =>
+    request(`/datacenter-vlans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDatacenterVlan: (id) => request(`/datacenter-vlans/${id}`, { method: 'DELETE' }),
 
   azureSubnets: () => request('/azure-subnets'),
   createAzureSubnet: (data) =>

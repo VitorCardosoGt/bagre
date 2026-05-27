@@ -10,6 +10,8 @@ const ENTITY_LABELS = {
   site: 'Site',
   subnet: 'Subnet',
   user: 'Usuário',
+  datacenter_vlan: 'VLAN DC',
+  cloud_account: 'Cloud account',
 };
 const ACTION_LABELS = {
   create: 'Criou',

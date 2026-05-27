@@ -192,16 +192,19 @@ model MasterRange {
   id          Int      @id @default(autoincrement())
   cidr        String
   description String?
-  category    String? // Equinix / Azure / Microsoft / Amazon / Links
+  category    String? // ex: Datacenter / Cloud / Links / WAN — string livre
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([cidr, description])
 }
 
-model EquinixVlan {
+// Datacenter / colocation VLANs — catálogo de referência neutro em relação
+// ao provider (Equinix, Ascenty, ODATA, próprio datacenter, etc).
+model DatacenterVlan {
   id        Int      @id @default(autoincrement())
   name      String
+  provider  String? // ex: "Equinix", "Ascenty", "ODATA", "Próprio DC"
   vlanId    Int?
   network   String?
   usage     String?

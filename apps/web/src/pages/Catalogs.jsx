@@ -9,18 +9,19 @@ import ConfirmDialog from '../components/ConfirmDialog.jsx';
 
 const TABS = [
   { id: 'master', label: 'Ranges Mestre' },
-  { id: 'equinix', label: 'Equinix VLANs' },
+  { id: 'datacenter', label: 'Datacenter VLANs' },
   { id: 'azure', label: 'Azure Subnets' },
 ];
 
 const MASTER_FIELDS = [
   { name: 'cidr', label: 'CIDR', required: true, placeholder: '10.0.0.0/24', mono: true },
   { name: 'description', label: 'Descrição', placeholder: 'opcional', span: 'full' },
-  { name: 'category', label: 'Categoria', placeholder: 'ex: Equinix, Azure, Links' },
+  { name: 'category', label: 'Categoria', placeholder: 'ex: Datacenter, Cloud, Links' },
 ];
 
-const EQUINIX_FIELDS = [
+const DATACENTER_FIELDS = [
   { name: 'name', label: 'Nome', required: true, placeholder: 'ex: VLAN-PROD' },
+  { name: 'provider', label: 'Provider / DC', placeholder: 'ex: Equinix, Ascenty, ODATA, Próprio DC' },
   { name: 'vlanId', label: 'VLAN ID', type: 'number', placeholder: 'opcional' },
   { name: 'network', label: 'Network', placeholder: '10.0.0.0/24', mono: true, span: 'full' },
   { name: 'usage', label: 'Range', placeholder: '10.0.0.1 - 10.0.0.254', mono: true },
@@ -43,7 +44,7 @@ export default function Catalogs() {
     <div>
       <PageHeader
         title="Catálogos"
-        description="Listas de referência: ranges mestre da empresa, VLANs do datacenter Equinix e subnets do Azure."
+        description="Listas de referência: ranges mestre, VLANs de datacenters/colocations e subnets de cloud."
       />
 
       <div className="border-b border-slate-200 dark:border-slate-800 flex gap-1 mb-4">
@@ -63,7 +64,7 @@ export default function Catalogs() {
       </div>
 
       {tab === 'master' && <MasterRanges canEdit={canEdit} />}
-      {tab === 'equinix' && <Equinix canEdit={canEdit} />}
+      {tab === 'datacenter' && <DatacenterVlans canEdit={canEdit} />}
       {tab === 'azure' && <Azure canEdit={canEdit} />}
     </div>
   );
@@ -192,13 +193,13 @@ function MasterRanges({ canEdit }) {
   );
 }
 
-function Equinix({ canEdit }) {
+function DatacenterVlans({ canEdit }) {
   const crud = useCrud({
-    key: 'equinix-vlans',
-    list: api.equinixVlans,
-    create: api.createEquinixVlan,
-    update: api.updateEquinixVlan,
-    remove: api.deleteEquinixVlan,
+    key: 'datacenter-vlans',
+    list: api.datacenterVlans,
+    create: api.createDatacenterVlan,
+    update: api.updateDatacenterVlan,
+    remove: api.deleteDatacenterVlan,
   });
   const [modal, setModal] = useState({ open: false, initial: null });
   const [confirm, setConfirm] = useState({ open: false, id: null, label: '' });
@@ -206,12 +207,13 @@ function Equinix({ canEdit }) {
 
   return (
     <div>
-      <Toolbar canEdit={canEdit} label="Nova VLAN Equinix" onNew={() => { setErr(null); setModal({ open: true, initial: null }); }} />
+      <Toolbar canEdit={canEdit} label="Nova VLAN" onNew={() => { setErr(null); setModal({ open: true, initial: null }); }} />
       <div className="card overflow-hidden">
         <table className="w-full text-sm table-zebra">
           <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2 text-left">Nome</th>
+              <th className="px-3 py-2 text-left">Provider / DC</th>
               <th className="px-3 py-2 text-left">VLAN</th>
               <th className="px-3 py-2 text-left">Network</th>
               <th className="px-3 py-2 text-left">Range</th>
@@ -223,6 +225,7 @@ function Equinix({ canEdit }) {
             {crud.data.map((r) => (
               <tr key={r.id}>
                 <td className="px-3 py-1.5">{r.name}</td>
+                <td className="px-3 py-1.5 text-slate-600">{r.provider || '—'}</td>
                 <td className="px-3 py-1.5 font-mono text-xs">{r.vlanId ?? '—'}</td>
                 <td className="px-3 py-1.5 font-mono text-xs">{r.network || '—'}</td>
                 <td className="px-3 py-1.5 font-mono text-xs">{r.usage || '—'}</td>
@@ -240,8 +243,8 @@ function Equinix({ canEdit }) {
       <CatalogFormModal
         open={modal.open}
         onClose={() => setModal({ open: false, initial: null })}
-        title={modal.initial ? 'Editar VLAN Equinix' : 'Nova VLAN Equinix'}
-        fields={EQUINIX_FIELDS}
+        title={modal.initial ? 'Editar VLAN de datacenter' : 'Nova VLAN de datacenter'}
+        fields={DATACENTER_FIELDS}
         initial={modal.initial}
         loading={crud.create.isPending || crud.update.isPending}
         error={err}
@@ -262,7 +265,7 @@ function Equinix({ canEdit }) {
       <ConfirmDialog
         open={confirm.open}
         onClose={() => setConfirm({ open: false, id: null, label: '' })}
-        title="Excluir VLAN Equinix"
+        title="Excluir VLAN de datacenter"
         message={<>Tem certeza que quer excluir <strong>{confirm.label}</strong>?</>}
         confirmLabel="Excluir"
         destructive
