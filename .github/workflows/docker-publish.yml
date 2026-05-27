@@ -1,11 +1,14 @@
 name: Docker publish
 
-# Publica imagens em Docker Hub a cada release publicada (tag vX.Y.Z + GitHub Release).
-# Secrets necessários no repo (Settings → Secrets and variables → Actions):
-#   DOCKERHUB_USERNAME — username do Docker Hub
-#   DOCKERHUB_TOKEN    — access token (Docker Hub → Account Settings → Security → New Access Token)
+# Publica imagens em Docker Hub a cada release publicada.
 #
-# Imagens publicadas:
+# Faz skip elegante (sem falhar) quando os secrets DOCKERHUB_USERNAME e
+# DOCKERHUB_TOKEN não estiverem configurados. Pra ativar, vá em:
+#   Settings → Secrets and variables → Actions → New repository secret
+# e configure DOCKERHUB_USERNAME + DOCKERHUB_TOKEN (este último gerado em
+# Docker Hub → Account Settings → Security → New Access Token).
+#
+# Imagens publicadas (quando configurado):
 #   docker.io/<user>/bagre-api:<version>  + :latest
 #   docker.io/<user>/bagre-web:<version>  + :latest
 
@@ -32,7 +35,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check Docker Hub secrets
+        id: check
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "${DOCKERHUB_USERNAME}" ] || [ -z "${DOCKERHUB_TOKEN}" ]; then
+            echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN não configurados — pulando publicação."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Resolve version
+        if: steps.check.outputs.skip == 'false'
         id: ver
         run: |
           if [ -n "${{ github.event.release.tag_name }}" ]; then
@@ -43,16 +60,20 @@ jobs:
           v="${v#v}"
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - if: steps.check.outputs.skip == 'false'
+        uses: docker/setup-qemu-action@v3
+      - if: steps.check.outputs.skip == 'false'
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
+        if: steps.check.outputs.skip == 'false'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
+        if: steps.check.outputs.skip == 'false'
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
