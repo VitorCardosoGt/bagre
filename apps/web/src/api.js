@@ -183,4 +183,24 @@ export const api = {
   deleteAzureSubnet: (id) => request(`/azure-subnets/${id}`, { method: 'DELETE' }),
 
   cidrReference: () => request('/cidr-reference'),
+
+  // Cloud accounts (admin)
+  cloudProviders: () => request('/cloud-providers'),
+  cloudAccounts: () => request('/cloud-accounts'),
+  cloudAccount: (id) => request(`/cloud-accounts/${id}`),
+  createCloudAccount: (data) =>
+    request('/cloud-accounts', { method: 'POST', body: JSON.stringify(data) }),
+  updateCloudAccount: (id, data) =>
+    request(`/cloud-accounts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCloudAccount: (id) =>
+    request(`/cloud-accounts/${id}`, { method: 'DELETE' }),
+  testCloudAccount: (id) =>
+    request(`/cloud-accounts/${id}/test`, { method: 'POST' }),
+  syncCloudAccount: (id) =>
+    request(`/cloud-accounts/${id}/sync`, { method: 'POST' }),
+  cloudAccountRuns: (id, limit = 20) =>
+    request(`/cloud-accounts/${id}/runs?limit=${limit}`),
+
+  // Cloud FinOps
+  cloudIdlePublicIps: () => request('/cloud/finops/idle-public-ips'),
 };

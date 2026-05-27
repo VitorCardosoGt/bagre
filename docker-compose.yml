@@ -36,6 +36,12 @@ services:
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@bagre.local}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-admin123}
       STATS_PUBLIC: ${STATS_PUBLIC:-false}
+      CLOUD_CREDS_KEY: ${CLOUD_CREDS_KEY:-}
+      # Optional base AWS credentials used by ASSUME_ROLE auth mode on
+      # cloud-accounts. Leave empty unless you'll connect AWS via Assume Role.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
     ports:
       - "3001:3001"
     volumes:

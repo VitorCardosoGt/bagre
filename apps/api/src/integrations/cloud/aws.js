@@ -1,18 +1,30 @@
 // AWS provider implementation
 //
 // Usa @aws-sdk/client-ec2 (v3 modular) para queries read-only.
-// Auth pattern: credenciais vêm como JSON string com:
-//   { accessKeyId, secretAccessKey, sessionToken? }    OR
-//   { roleArn, externalId? }  // futuro: STS AssumeRole pattern
 //
-// Implementação inicial cobre apenas access key. AssumeRole cross-account vem em fase futura.
+// Auth modes (credentials JSON shape):
+//   A) Access key:     { mode: "ACCESS_KEY", accessKeyId, secretAccessKey, sessionToken? }
+//   B) Assume role:    { mode: "ASSUME_ROLE", roleArn, externalId?, sessionName? }
+//      → Bagre uses its own default credential chain (env vars / EC2 instance role
+//        / shared config) to call STS:AssumeRole. No long-lived secret stored
+//        for this CloudAccount.
+//
+// Backward-compat: payloads without `mode` but with accessKeyId default to mode A.
+//
+// IAM policy mínima (anexar ao IAM User do modo A ou ao IAM Role do modo B):
+//   ec2:DescribeSubnets
+//   ec2:DescribeNetworkInterfaces
+//   ec2:DescribeAddresses
+//   sts:GetCallerIdentity
 
 import { EC2Client, DescribeSubnetsCommand, DescribeNetworkInterfacesCommand, DescribeAddressesCommand } from '@aws-sdk/client-ec2';
-import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
+import { STSClient, GetCallerIdentityCommand, AssumeRoleCommand } from '@aws-sdk/client-sts';
 
 export const name = 'aws';
 
-/** Parse credentials JSON and validate shape. */
+const ROLE_SESSION_DURATION_S = 3600; // 1h — refreshed per sync run
+
+/** Parse credentials JSON and infer auth mode. */
 function parseCredentials(credsJson) {
   let creds;
   try {
@@ -20,28 +32,72 @@ function parseCredentials(credsJson) {
   } catch (e) {
     throw new Error('AWS credentials: invalid JSON');
   }
-  if (!creds.accessKeyId || !creds.secretAccessKey) {
-    throw new Error('AWS credentials: missing accessKeyId or secretAccessKey');
+  const mode = creds.mode || (creds.roleArn ? 'ASSUME_ROLE' : 'ACCESS_KEY');
+  if (mode === 'ACCESS_KEY') {
+    if (!creds.accessKeyId || !creds.secretAccessKey) {
+      throw new Error('AWS credentials (ACCESS_KEY mode): missing accessKeyId or secretAccessKey');
+    }
+    return {
+      mode,
+      accessKeyId: creds.accessKeyId,
+      secretAccessKey: creds.secretAccessKey,
+      sessionToken: creds.sessionToken,
+    };
+  }
+  if (mode === 'ASSUME_ROLE') {
+    if (!creds.roleArn) {
+      throw new Error('AWS credentials (ASSUME_ROLE mode): missing roleArn');
+    }
+    return {
+      mode,
+      roleArn: creds.roleArn,
+      externalId: creds.externalId,
+      sessionName: creds.sessionName || 'bagre-ipam-sync',
+    };
+  }
+  throw new Error(`AWS credentials: unknown mode "${mode}"`);
+}
+
+/** Returns a credential provider object for the AWS SDK based on auth mode. */
+async function resolveAwsCredentials(parsed, region) {
+  if (parsed.mode === 'ACCESS_KEY') {
+    return {
+      accessKeyId: parsed.accessKeyId,
+      secretAccessKey: parsed.secretAccessKey,
+      sessionToken: parsed.sessionToken,
+    };
+  }
+  // ASSUME_ROLE: STS client uses Bagre's default credential chain (env, IMDS, shared config).
+  const sts = new STSClient({ region });
+  const out = await sts.send(new AssumeRoleCommand({
+    RoleArn: parsed.roleArn,
+    RoleSessionName: parsed.sessionName,
+    DurationSeconds: ROLE_SESSION_DURATION_S,
+    ExternalId: parsed.externalId,
+  }));
+  if (!out.Credentials) {
+    throw new Error('AWS AssumeRole: empty credentials in response');
   }
   return {
-    accessKeyId: creds.accessKeyId,
-    secretAccessKey: creds.secretAccessKey,
-    sessionToken: creds.sessionToken,
+    accessKeyId: out.Credentials.AccessKeyId,
+    secretAccessKey: out.Credentials.SecretAccessKey,
+    sessionToken: out.Credentials.SessionToken,
   };
 }
 
-function ec2Client(credsJson, region) {
-  const credentials = parseCredentials(credsJson);
+async function ec2Client(credsJson, region) {
+  const parsed = parseCredentials(credsJson);
+  const credentials = await resolveAwsCredentials(parsed, region);
   return new EC2Client({ region, credentials });
 }
 
-/** Light call to confirm credentials work. */
+/** Light call to confirm credentials work end-to-end (including AssumeRole if applicable). */
 export async function validateCredentials(credsJson) {
-  const credentials = parseCredentials(credsJson);
-  // STS GetCallerIdentity é region-agnostic e barato
+  const parsed = parseCredentials(credsJson);
+  const credentials = await resolveAwsCredentials(parsed, 'us-east-1');
   const sts = new STSClient({ region: 'us-east-1', credentials });
   const out = await sts.send(new GetCallerIdentityCommand({}));
-  return { account: out.Account, arn: out.Arn, userId: out.UserId };
+  return { account: out.Account, arn: out.Arn, userId: out.UserId, mode: parsed.mode };
 }
 
 /** Extract a tag named "Name", fallback to id. */
@@ -64,7 +120,7 @@ function tagsToObject(tags) {
  * @returns {Promise<NormalizedSubnet[]>}
  */
 export async function listSubnets(credsJson, region) {
-  const client = ec2Client(credsJson, region);
+  const client = await ec2Client(credsJson, region);
   const out = [];
   let nextToken;
   do {
@@ -95,7 +151,7 @@ export async function listSubnets(credsJson, region) {
  * @returns {Promise<NormalizedIp[]>}
  */
 export async function listIps(credsJson, region) {
-  const client = ec2Client(credsJson, region);
+  const client = await ec2Client(credsJson, region);
   const out = [];
 
   // 1. ENIs (todas as interfaces; private + public se associado)

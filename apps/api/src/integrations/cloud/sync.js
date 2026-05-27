@@ -44,7 +44,45 @@ export async function runSync(prisma, cloudAccountId) {
     const sourceTag = `cloud:${provider.name}`;
     const regions = account.regions?.length ? account.regions : ['us-east-1'];
 
-    // Track cloudResourceIds seen this run — facilita detectar obsoletos
+    // Ensure a per-account site exists (one per CloudAccount keeps subnets
+    // from different accounts isolated even within the same provider).
+    const siteCode = `cloud-${provider.name}-${account.id}`;
+    const site = await prisma.site.upsert({
+      where: { code: siteCode },
+      update: { name: `Cloud — ${account.displayName}` },
+      create: {
+        code: siteCode,
+        name: `Cloud — ${account.displayName}`,
+        description: `Auto-managed by cloud sync (account #${account.id}). Renomear/mover livremente.`,
+      },
+    });
+
+    // Lazy-init the public IP pool subnet — IPs that have no native parent
+    // (typical case: unassociated Elastic IPs). Created on first need.
+    let publicPoolSubnet = null;
+    async function getPublicPoolSubnet() {
+      if (publicPoolSubnet) return publicPoolSubnet;
+      const poolName = `${provider.name}-public-pool`;
+      publicPoolSubnet = await prisma.subnet.upsert({
+        where: { siteId_name: { siteId: site.id, name: poolName } },
+        update: {
+          source: sourceTag,
+          cloudAccountId: account.id,
+        },
+        create: {
+          siteId: site.id,
+          name: poolName,
+          // Public IP space is not a real CIDR — store null and convey purpose
+          // via name + description. The IPs themselves carry the real address.
+          cidr: null,
+          description: 'Pool sintético para IPs públicos sem subnet nativa (Elastic IPs unassociated, etc). Base do relatório FinOps.',
+          source: sourceTag,
+          cloudAccountId: account.id,
+        },
+      });
+      return publicPoolSubnet;
+    }
+
     const seenSubnetIds = new Set();
     const seenIpKeys = new Set(); // subnetCloudId|address
 
@@ -72,19 +110,6 @@ export async function runSync(prisma, cloudAccountId) {
           });
           summary.itemsUpdated++;
         } else {
-          // TODO: precisa de um Site para criar subnet. Por ora, cria um
-          // site "cloud:<provider>" como bucket default. Refinar depois com
-          // mapping configurável (region → site).
-          const siteCode = `cloud-${provider.name}`;
-          const site = await prisma.site.upsert({
-            where: { code: siteCode },
-            update: {},
-            create: {
-              code: siteCode,
-              name: `Cloud — ${provider.name.toUpperCase()}`,
-              description: 'Auto-criado pelo cloud sync. Renomear/mover livremente.',
-            },
-          });
           await prisma.subnet.create({
             data: {
               siteId: site.id,
@@ -105,18 +130,22 @@ export async function runSync(prisma, cloudAccountId) {
       summary.itemsRead += ips.length;
 
       for (const nip of ips) {
-        const subnetForIp = nip.subnetCloudId
+        let subnetForIp = nip.subnetCloudId
           ? await prisma.subnet.findFirst({ where: { cloudResourceId: nip.subnetCloudId } })
           : null;
 
         if (!subnetForIp) {
-          // IPs públicos (Elastic IPs unassociated) não têm subnet.
-          // Bucket especial: subnet "<provider>-public-pool" no site cloud
-          // Detalhe: skip por ora (Phase futura). FinOps angle precisará disso.
-          continue;
+          // Public IPs sem subnet nativa (Elastic IPs unassociated) — vão pro pool sintético.
+          // Skipar IPs PRIVATE órfãos: indicam inconsistência (provider devolveu IP sem
+          // parent subnet); logamos via metadata e seguimos.
+          if (nip.kind === 'PUBLIC') {
+            subnetForIp = await getPublicPoolSubnet();
+          } else {
+            continue;
+          }
         }
 
-        const key = `${nip.subnetCloudId}|${nip.address}`;
+        const key = `${subnetForIp.id}|${nip.address}`;
         seenIpKeys.add(key);
 
         const existing = await prisma.ipAddress.findFirst({

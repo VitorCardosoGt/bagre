@@ -97,7 +97,10 @@ export async function registerCloudAccountRoutes(app) {
       },
     });
 
-    await auditFromReq(req, 'create', 'cloud_account', account.id, { provider, displayName, scope });
+    await auditFromReq(req, {
+      entity: 'cloud_account', entityId: account.id, action: 'create',
+      after: { provider, displayName, scope },
+    });
     return reply.code(201).send(safeView(account));
   });
 
@@ -118,7 +121,10 @@ export async function registerCloudAccountRoutes(app) {
     }
 
     const updated = await prisma.cloudAccount.update({ where: { id }, data });
-    await auditFromReq(req, 'update', 'cloud_account', id, data);
+    await auditFromReq(req, {
+      entity: 'cloud_account', entityId: id, action: 'update',
+      before: existing, after: data,
+    });
     return safeView(updated);
   });
 
@@ -128,7 +134,10 @@ export async function registerCloudAccountRoutes(app) {
     const existing = await prisma.cloudAccount.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: 'not_found' });
     await prisma.cloudAccount.delete({ where: { id } });
-    await auditFromReq(req, 'delete', 'cloud_account', id, {});
+    await auditFromReq(req, {
+      entity: 'cloud_account', entityId: id, action: 'delete',
+      before: existing,
+    });
     return reply.code(204).send();
   });
 
@@ -156,7 +165,10 @@ export async function registerCloudAccountRoutes(app) {
 
     try {
       const { runId, summary } = await runSync(prisma, id);
-      await auditFromReq(req, 'sync', 'cloud_account', id, { runId, ...summary });
+      await auditFromReq(req, {
+        entity: 'cloud_account', entityId: id, action: 'sync',
+        after: { runId, ...summary },
+      });
       return { ok: true, runId, summary };
     } catch (err) {
       return reply.code(500).send({ ok: false, error: err.message });

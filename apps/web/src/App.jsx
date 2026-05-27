@@ -20,6 +20,7 @@ import SsoCallback from './pages/SsoCallback.jsx';
 import ZabbixSettings from './pages/ZabbixSettings.jsx';
 import NetworkHealth from './pages/NetworkHealth.jsx';
 import IntegrationsStatus from './pages/IntegrationsStatus.jsx';
+import CloudAccounts from './pages/CloudAccounts.jsx';
 
 function Protected({ children, role }) {
   const { user, ready } = useAuth();
@@ -93,6 +94,14 @@ export default function App() {
                   element={
                     <Protected role="ADMIN">
                       <IntegrationsStatus />
+                    </Protected>
+                  }
+                />
+                <Route
+                  path="/admin/cloud-accounts"
+                  element={
+                    <Protected role="ADMIN">
+                      <CloudAccounts />
                     </Protected>
                   }
                 />
