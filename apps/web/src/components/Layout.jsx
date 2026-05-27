@@ -34,7 +34,7 @@ const NAV_BASE = [
   { to: '/devices', label: 'Equipamentos', icon: Server },
   { to: '/catalogs', label: 'Catálogos', icon: Database },
   { to: '/cidr', label: 'Calculadora CIDR', icon: Calculator },
-  { to: '/integrations', label: 'Integrações / API', icon: Plug },
+  { to: '/integrations', label: 'Documentação API', icon: Plug },
 ];
 
 // Externos abrem em nova aba. URL inferida do hostname atual.
@@ -44,7 +44,7 @@ function buildWikiUrl() {
 }
 
 const NAV_ADMIN = [
-  { to: '/admin/integrations', label: 'Integrações', icon: Plug2 },
+  { to: '/admin/integrations', label: 'Conexões', icon: Plug2 },
   { to: '/admin/cloud-accounts', label: 'Cloud Accounts', icon: Cloud },
   { to: '/admin/pending-discoveries', label: 'Aprovações', icon: Inbox, badge: 'pending' },
   { to: '/admin/network-health', label: 'Saúde da rede', icon: Stethoscope },

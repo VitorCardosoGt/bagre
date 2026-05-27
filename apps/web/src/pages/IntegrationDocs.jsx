@@ -4,8 +4,8 @@ export default function IntegrationDocs() {
   return (
     <div className="max-w-4xl space-y-5">
       <PageHeader
-        title="Integrações & API"
-        description="Como atualizar o IPAM automaticamente a partir de scanners, ferramentas de monitoramento e pipelines de descoberta (Prometheus, OTEL, scripts próprios)."
+        title="Documentação da API"
+        description="Endpoints REST para integrar o Bagre com scanners, ferramentas de monitoramento e pipelines de descoberta (Prometheus, OTEL, scripts próprios). Para gerenciar conexões com Zabbix, OIDC e Cloud, veja a página Conexões no menu admin."
       />
 
       <Section title="1. Health-check">
