@@ -16,13 +16,29 @@ export function newToken() {
 
 /**
  * Bootstrap a default admin user if no users exist yet.
- * Reads BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD from env.
+ *
+ * Security:
+ * - Se BOOTSTRAP_ADMIN_PASSWORD não vier do env, geramos uma senha aleatória
+ *   forte e logamos UMA vez. Evita o anti-pattern "admin/admin123" em
+ *   deploys que esquecem de configurar.
+ * - mustChangePwd=true força troca no primeiro login independentemente.
+ * - Se BOOTSTRAP_ADMIN_PASSWORD vier mas for muito curta (<10 chars), recusa
+ *   criar o usuário — fail-closed.
  */
 export async function ensureBootstrapAdmin(log) {
   const count = await prisma.user.count();
   if (count > 0) return;
   const email = process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@bagre.local';
-  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'admin123';
+  let password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+  let generated = false;
+  if (!password) {
+    password = crypto.randomBytes(12).toString('base64url');
+    generated = true;
+  } else if (password.length < 10) {
+    throw new Error(
+      'BOOTSTRAP_ADMIN_PASSWORD precisa ter pelo menos 10 caracteres. Recusa fail-closed.',
+    );
+  }
   const passwordHash = await hashPassword(password);
   await prisma.user.create({
     data: {
@@ -33,7 +49,16 @@ export async function ensureBootstrapAdmin(log) {
       mustChangePwd: true,
     },
   });
-  log.warn(`bootstrap admin created: ${email} / ${password}  (mustChangePwd=true)`);
+  if (generated) {
+    log.warn(`╔═══════════════════════════════════════════════════════════════════╗`);
+    log.warn(`║  BOOTSTRAP ADMIN CRIADO (senha gerada porque BOOTSTRAP_ADMIN_PASSWORD não foi definida)`);
+    log.warn(`║  email:    ${email}`);
+    log.warn(`║  password: ${password}`);
+    log.warn(`║  Anote essa senha — não será exibida de novo. mustChangePwd=true.`);
+    log.warn(`╚═══════════════════════════════════════════════════════════════════╝`);
+  } else {
+    log.info(`Bootstrap admin criado: ${email} (mustChangePwd=true)`);
+  }
 }
 
 /**

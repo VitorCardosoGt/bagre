@@ -36,9 +36,21 @@ async function build() {
   await app.register(cors, { origin: true, credentials: true });
   await app.register(cookie);
   await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
-  await app.register(jwt, {
-    secret: process.env.JWT_SECRET || 'dev-secret-please-change',
-  });
+  // JWT_SECRET é fail-closed: sem env definido ou abaixo de 32 chars, o boot
+  // aborta. Segredos fracos permitem forjar tokens; melhor cair barulhento.
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret || jwtSecret.length < 32) {
+    throw new Error(
+      'JWT_SECRET ausente ou com menos de 32 chars. Gere uma chave forte com: ' +
+        'node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64\'))"',
+    );
+  }
+  if (/please-change|change-me|dev-secret/i.test(jwtSecret)) {
+    throw new Error(
+      'JWT_SECRET ainda tem o valor de exemplo. Troque por uma chave forte aleatória antes de subir.',
+    );
+  }
+  await app.register(jwt, { secret: jwtSecret });
 
   app.decorate('requireAuth', requireAuth);
   app.decorate('requireAdmin', requireAdmin);

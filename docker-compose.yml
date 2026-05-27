@@ -30,11 +30,15 @@ services:
       DATABASE_URL: postgresql://bagre:bagre@db:5432/bagre?schema=public
       PORT: 3001
       NODE_ENV: production
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me}
-      INGEST_TOKEN: ${INGEST_TOKEN:-change-me-ingest}
-      JWT_SECRET: ${JWT_SECRET:-please-change-this-secret-32-chars-min}
+      # Tokens / segredos — sem defaults inseguros. Defina no .env.
+      # JWT_SECRET é obrigatório (API recusa boot sem ele, ≥32 chars).
+      # BOOTSTRAP_ADMIN_PASSWORD: opcional; se omitido, gerada aleatoriamente
+      # e impressa no log do api container no primeiro boot.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      INGEST_TOKEN: ${INGEST_TOKEN:-}
+      JWT_SECRET: ${JWT_SECRET:-}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@bagre.local}
-      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-admin123}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
       STATS_PUBLIC: ${STATS_PUBLIC:-false}
       CLOUD_CREDS_KEY: ${CLOUD_CREDS_KEY:-}
       # Optional base AWS credentials used by ASSUME_ROLE auth mode on
