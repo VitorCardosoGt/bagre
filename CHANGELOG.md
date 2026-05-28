@@ -10,6 +10,10 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+### Adicionado
+- **Calculadora CIDR avançada** (#12) — página `/cidr` agora tem 4 tabs: **Análise** (parse com detecção de overlap no IPAM e match de master range), **Dividir** (quebra um CIDR em N subnets menores, marcando quais já estão em uso), **Próximas livres** (sugere subnets disponíveis dentro de um parent), **Supernet** (acha o menor CIDR que cobre vários inputs).
+- Endpoints REST novos: `GET /api/cidr/parse`, `POST /api/cidr/split`, `POST /api/cidr/merge`, `GET /api/cidr/next-free`. Todos exigem auth.
+
 ---
 
 ## [0.3.0] — 2026-05-27

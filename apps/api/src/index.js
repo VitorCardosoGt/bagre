@@ -23,6 +23,7 @@ import { registerAuditRoutes } from './routes/audit.js';
 import { registerOidcRoutes } from './routes/oidc.js';
 import { registerZabbixRoutes } from './routes/zabbix.js';
 import { registerPrometheusRoutes } from './routes/prometheus.js';
+import { registerCidrRoutes } from './routes/cidr.js';
 import { registerNetworkHealthRoutes } from './routes/network-health.js';
 import { registerIntegrationsStatusRoutes } from './routes/integrations-status.js';
 import { registerCloudAccountRoutes } from './routes/cloud-accounts.js';
@@ -133,6 +134,7 @@ async function build() {
   await registerOidcRoutes(app);
   await registerZabbixRoutes(app);
   await registerPrometheusRoutes(app);
+  await registerCidrRoutes(app);
   await registerNetworkHealthRoutes(app);
   await registerIntegrationsStatusRoutes(app);
   await registerCloudAccountRoutes(app);

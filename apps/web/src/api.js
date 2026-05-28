@@ -191,6 +191,15 @@ export const api = {
 
   cidrReference: () => request('/cidr-reference'),
 
+  // CIDR utilities (advanced calc — split, merge, next-free, parse with IPAM overlap)
+  cidrParse: (cidr) => request(`/cidr/parse?cidr=${encodeURIComponent(cidr)}`),
+  cidrSplit: (cidr, prefix) =>
+    request('/cidr/split', { method: 'POST', body: JSON.stringify({ cidr, prefix }) }),
+  cidrMerge: (cidrs) =>
+    request('/cidr/merge', { method: 'POST', body: JSON.stringify({ cidrs }) }),
+  cidrNextFree: (parent, prefix, limit = 10) =>
+    request(`/cidr/next-free?parent=${encodeURIComponent(parent)}&prefix=${prefix}&limit=${limit}`),
+
   // Cloud accounts (admin)
   cloudProviders: () => request('/cloud-providers'),
   cloudAccounts: () => request('/cloud-accounts'),
