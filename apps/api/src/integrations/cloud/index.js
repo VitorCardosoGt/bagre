@@ -48,12 +48,12 @@
 
 import * as aws from './aws.js';
 import * as azure from './azure.js';
-// import * as gcp from './gcp.js';      // TODO #21
+import * as gcp from './gcp.js';
 
 const providers = {
   AWS: aws,
   AZURE: azure,
-  // GCP: gcp,
+  GCP: gcp,
 };
 
 export function getProvider(providerName) {

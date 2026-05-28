@@ -68,8 +68,17 @@ exatamente estas 4 actions):
     scopeLabel: 'Project ID',
     scopePlaceholder: 'my-gcp-project',
     defaultRegions: [],
-    regionsHint: 'us-central1, southamerica-east1, …',
-    policy: '',
+    regionsHint: 'Não usado — GCP descobre via aggregated/* do projeto',
+    policy: `Crie uma Service Account no projeto e atribua a role
+"Compute Network Viewer" (ou role custom com as 3 actions):
+
+  compute.subnetworks.list
+  compute.instances.list
+  compute.addresses.list
+
+Gere uma chave JSON da service account
+(Console → IAM → Service Accounts → Keys → Add Key)
+e cole o conteúdo inteiro do arquivo no campo abaixo.`,
   },
 };
 
@@ -361,6 +370,8 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
   const [tenantId, setTenantId] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
+  // GCP
+  const [gcpServiceAccountJson, setGcpServiceAccountJson] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const info = PROVIDER_INFO[provider];
@@ -375,6 +386,10 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
         clientId: clientId.trim(),
         clientSecret: clientSecret.trim(),
       });
+    }
+    if (provider === 'GCP') {
+      // O backend valida o JSON. Aceita o conteúdo bruto do arquivo de chave.
+      return gcpServiceAccountJson.trim();
     }
     // AWS
     if (authMode === 'ACCESS_KEY') {
@@ -399,7 +414,7 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
         provider,
         displayName: displayName.trim(),
         scope: scope.trim(),
-        regions: provider === 'AZURE'
+        regions: (provider === 'AZURE' || provider === 'GCP')
           ? []
           : regions.split(',').map((r) => r.trim()).filter(Boolean),
         credentials: buildCredentials(),
@@ -411,6 +426,7 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
       setDisplayName(''); setScope(''); setAccessKeyId(''); setSecretAccessKey('');
       setRoleArn(''); setExternalId('');
       setTenantId(''); setClientId(''); setClientSecret('');
+      setGcpServiceAccountJson('');
     } catch (err) {
       toast.error(`Falha: ${err.message}`);
     } finally {
@@ -494,7 +510,7 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
           </div>
         </div>
 
-        {provider !== 'AZURE' && (
+        {provider === 'AWS' && (
           <div>
             <label className="text-xs font-medium text-slate-600 block mb-1">Regions (vírgula)</label>
             <input
@@ -591,6 +607,26 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
                 value={externalId}
                 onChange={(e) => setExternalId(e.target.value)}
               />
+            </div>
+          </div>
+        )}
+
+        {provider === 'GCP' && (
+          <div className="space-y-3">
+            <div className="text-xs text-slate-500 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded p-2">
+              <strong>Service Account JSON:</strong> baixe o arquivo de chave da service account (Console → IAM → Service Accounts → sua SA → Keys → Add Key → JSON) e cole o conteúdo inteiro abaixo.
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Service Account JSON</label>
+              <textarea
+                className="input w-full font-mono text-[11px]"
+                rows={8}
+                placeholder='{&#10;  "type": "service_account",&#10;  "project_id": "...",&#10;  "private_key_id": "...",&#10;  "private_key": "-----BEGIN PRIVATE KEY-----\n...",&#10;  "client_email": "...@...iam.gserviceaccount.com",&#10;  ...&#10;}'
+                value={gcpServiceAccountJson}
+                onChange={(e) => setGcpServiceAccountJson(e.target.value)}
+                required
+              />
+              <p className="text-[11px] text-slate-500 mt-1">A chave fica criptografada AES-256-GCM no banco. Nunca volta pra UI em texto puro depois de salva.</p>
             </div>
           </div>
         )}

@@ -11,6 +11,7 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
 ### Adicionado
+- **Cloud sync GCP** ([#21](https://github.com/fabgcruz/bagre/issues/21)) — terceiro provider cloud implementado, fechando o multi-cloud (AWS + Azure + GCP). Auth via Service Account JSON key com JWT RS256 manual (sem `@google-cloud/*` SDK). Sincroniza subnetworks via `aggregated/subnetworks`, NICs de instâncias (private IPs + ephemeral public via `accessConfigs.natIP`), e endereços reservados (static, INTERNAL + EXTERNAL — esses últimos com `users:[]` viram o FinOps gold equivalente a Elastic IPs unassociated). UI ganha campo de Service Account JSON com textarea, instruções inline e link pra doc do GCP IAM.
 - **Cloud sync Azure** ([#20](https://github.com/fabgcruz/bagre/issues/20)) — segundo provider cloud implementado, completa a promessa de multi-cloud feita na v0.2.0. Auth via Service Principal (App Registration + client secret + tenant ID + subscription ID), REST puro contra `management.azure.com` (sem SDK pesado). Sincroniza VNets/subnets, Network Interfaces (private IPs) e Public IPs (incluindo unassociated — gold do FinOps). FinOps report e Catálogos dinâmicos passam a incluir Azure automaticamente. Picker do provider na UI agora habilita Azure (saiu do "em breve").
 - Sync engine passa `account.scope` como 3º argumento para `listSubnets`/`listIps`. AWS ignora; Azure usa pra montar o path `/subscriptions/{id}/providers/...`.
 

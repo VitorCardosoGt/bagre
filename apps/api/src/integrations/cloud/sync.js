@@ -42,9 +42,9 @@ export async function runSync(prisma, cloudAccountId) {
     const credentials = decryptCredentials(account.credentialsEnc);
     const provider = getProvider(account.provider);
     const sourceTag = `cloud:${provider.name}`;
-    // Azure: subscription cobre todas regions automaticamente. AWS/GCP: itera.
-    // Para Azure passamos uma única "region" dummy só pra reusar o loop.
-    const regions = account.provider === 'AZURE'
+    // Azure/GCP: scope cobre todas regions via aggregated endpoints. Itera só
+    // 1 vez com region dummy. AWS: itera regions configuradas.
+    const regions = (account.provider === 'AZURE' || account.provider === 'GCP')
       ? ['']
       : (account.regions?.length ? account.regions : ['us-east-1']);
 
