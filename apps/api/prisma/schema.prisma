@@ -241,6 +241,30 @@ model AzureSubnet {
 }
 
 // Single-row config (id=1) for the Zabbix integration. Admin manages via UI.
+// Single-row config (id=1) for the DNS integration (push hostnames Bagre→DNS).
+// V1 suporta PowerDNS. BIND/Route53/Cloudflare em iterações futuras (campo
+// `provider` permite distinguir).
+model DnsConfig {
+  id              Int       @id @default(1)
+  enabled         Boolean   @default(false)
+  provider        String    @default("powerdns") // powerdns | bind | route53 | cloudflare
+  baseUrl         String? // ex: https://powerdns.empresa.local:8081/api/v1
+  apiKey          String? // X-API-Key
+  serverId        String    @default("localhost") // PowerDNS server id (default 'localhost')
+  defaultZone     String? // ex: "internal.empresa.local." (com ponto final, padrão PowerDNS)
+  intervalMinutes Int       @default(60)
+  // Sync state
+  lastSyncAt      DateTime?
+  lastSyncStatus  String? // ok | error
+  lastSyncMessage String?
+  lastSyncStats   Json?
+  lastTestedAt    DateTime?
+  lastTestStatus  String?
+  lastTestMessage String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
 // Single-row config (id=1) for the Prometheus discovery integration.
 // Lê /api/v1/targets do Prometheus e cria/atualiza descobertas no Bagre.
 model PrometheusConfig {
