@@ -1,0 +1,197 @@
+// Bagre IPAM — gRPC API definition (DRAFT, not implemented yet)
+//
+// Issue: https://github.com/fabgcruz/bagre/issues/28
+// Design: docs/grpc-design.md
+//
+// Mantém paridade lógica com a REST API existente em /api/*. Quando
+// implementado, ambos lerão do mesmo Prisma.
+
+syntax = "proto3";
+
+package bagre.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ===========================================================================
+// Sites
+// ===========================================================================
+
+service SiteService {
+  rpc ListSites(ListSitesRequest) returns (ListSitesResponse);
+  rpc GetSite(GetSiteRequest) returns (Site);
+}
+
+message Site {
+  int32 id = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  int32 subnet_count = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message ListSitesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListSitesResponse {
+  repeated Site sites = 1;
+  string next_page_token = 2;
+}
+
+message GetSiteRequest {
+  oneof identifier {
+    int32 id = 1;
+    string code = 2;
+  }
+}
+
+// ===========================================================================
+// Subnets
+// ===========================================================================
+
+service SubnetService {
+  rpc ListSubnets(ListSubnetsRequest) returns (ListSubnetsResponse);
+  rpc GetSubnet(GetSubnetRequest) returns (Subnet);
+  rpc GetSubnetUtilization(GetSubnetRequest) returns (SubnetUtilization);
+  rpc CreateSubnet(CreateSubnetRequest) returns (Subnet);
+}
+
+message Subnet {
+  int32 id = 1;
+  int32 site_id = 2;
+  string name = 3;
+  string cidr = 4;
+  int32 vlan_id = 5;
+  string description = 6;
+  int32 ip_count = 7;
+  int32 used_count = 8;
+}
+
+message SubnetUtilization {
+  int32 subnet_id = 1;
+  int32 ip_count = 2;
+  int32 used_count = 3;
+  int32 reserved_count = 4;
+  int32 free_count = 5;
+  double utilization_percent = 6;
+}
+
+message ListSubnetsRequest {
+  int32 site_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListSubnetsResponse {
+  repeated Subnet subnets = 1;
+  string next_page_token = 2;
+}
+
+message GetSubnetRequest {
+  int32 id = 1;
+}
+
+message CreateSubnetRequest {
+  int32 site_id = 1;
+  string name = 2;
+  string cidr = 3;
+  int32 vlan_id = 4;
+  string description = 5;
+}
+
+// ===========================================================================
+// IPs
+// ===========================================================================
+
+service IpService {
+  rpc ListSubnetIps(ListSubnetIpsRequest) returns (stream Ip);
+  rpc GetIp(GetIpRequest) returns (Ip);
+  rpc AllocateNextFreeIp(AllocateRequest) returns (Ip);
+  rpc ReleaseIp(ReleaseRequest) returns (Ip);
+}
+
+enum IpStatus {
+  IP_STATUS_UNSPECIFIED = 0;
+  FREE = 1;
+  USED = 2;
+  RESERVED = 3;
+  CONFLICT = 4;
+}
+
+message Ip {
+  int32 id = 1;
+  int32 subnet_id = 2;
+  string address = 3;
+  IpStatus status = 4;
+  string hostname = 5;
+  string type = 6;
+  string function = 7;
+  string mac_address = 8;
+  google.protobuf.Timestamp last_seen_at = 9;
+}
+
+message ListSubnetIpsRequest {
+  int32 subnet_id = 1;
+  IpStatus status_filter = 2;
+  string query = 3;
+}
+
+message GetIpRequest {
+  int32 id = 1;
+}
+
+message AllocateRequest {
+  int32 subnet_id = 1;
+  string hostname = 2;
+  string type = 3;
+  string function = 4;
+}
+
+message ReleaseRequest {
+  int32 ip_id = 1;
+}
+
+// ===========================================================================
+// Cloud Accounts (admin scope)
+// ===========================================================================
+
+service CloudAccountService {
+  rpc ListCloudAccounts(ListCloudAccountsRequest) returns (ListCloudAccountsResponse);
+  rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse);
+}
+
+enum CloudProvider {
+  CLOUD_PROVIDER_UNSPECIFIED = 0;
+  AWS = 1;
+  AZURE = 2;
+  GCP = 3;
+}
+
+message CloudAccount {
+  int32 id = 1;
+  CloudProvider provider = 2;
+  string display_name = 3;
+  string scope = 4;
+  string status = 5;
+  google.protobuf.Timestamp last_sync_at = 6;
+}
+
+message ListCloudAccountsRequest {}
+
+message ListCloudAccountsResponse {
+  repeated CloudAccount accounts = 1;
+}
+
+message TriggerSyncRequest {
+  int32 account_id = 1;
+}
+
+message TriggerSyncResponse {
+  int32 run_id = 1;
+  int32 items_read = 2;
+  int32 items_created = 3;
+  int32 items_updated = 4;
+}
