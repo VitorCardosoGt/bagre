@@ -10,10 +10,21 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+---
+
+## [0.3.1] — 2026-05-27
+
+**Tema:** Calculadora CIDR avançada e operações em lote.
+
+Patch release focada em melhorar a experiência operacional diária sem breaking changes.
+
 ### Adicionado
-- **Operações em lote na lista de IPs** (#14) — checkboxes por linha + master checkbox no header + barra de ação flutuante quando ≥1 selecionado. Três ações: Reservar (status RESERVED), Liberar (limpa hostname/tipo/função/notas/device, status FREE) e Editar campos em massa (modal com tipo/função/notas). Endpoint `POST /api/ips/bulk` admin-gated, cap de 500 IPs por chamada. Status é auto-promovido pra USED se algum campo é preenchido em IPs FREE.
-- **Calculadora CIDR avançada** (#12) — página `/cidr` agora tem 4 tabs: **Análise** (parse com detecção de overlap no IPAM e match de master range), **Dividir** (quebra um CIDR em N subnets menores, marcando quais já estão em uso), **Próximas livres** (sugere subnets disponíveis dentro de um parent), **Supernet** (acha o menor CIDR que cobre vários inputs).
+- **Operações em lote na lista de IPs** ([#14](https://github.com/fabgcruz/bagre/issues/14)) — checkboxes por linha + master checkbox no header + barra de ação flutuante quando ≥1 selecionado. Três ações: Reservar (status RESERVED), Liberar (limpa hostname/tipo/função/notas/device, status FREE) e Editar campos em massa (modal com tipo/função/notas). Endpoint `POST /api/ips/bulk` admin-gated, cap de 500 IPs por chamada. Status é auto-promovido pra USED se algum campo é preenchido em IPs FREE.
+- **Calculadora CIDR avançada** ([#12](https://github.com/fabgcruz/bagre/issues/12)) — página `/cidr` agora tem 4 tabs: **Análise** (parse com detecção de overlap no IPAM e match de master range), **Dividir** (quebra um CIDR em N subnets menores, marcando quais já estão em uso), **Próximas livres** (sugere subnets disponíveis dentro de um parent), **Supernet** (acha o menor CIDR que cobre vários inputs).
 - Endpoints REST novos: `GET /api/cidr/parse`, `POST /api/cidr/split`, `POST /api/cidr/merge`, `GET /api/cidr/next-free`. Todos exigem auth.
+
+### Infra
+- Workflow `docker-publish.yml` agora faz skip elegante quando os secrets `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` não estão configurados — sem mais runs vermelhos. Quando os secrets forem configurados, a próxima release publica automaticamente.
 
 ---
 
@@ -110,7 +121,8 @@ Versão inicial publicada após o fork pra opensource.
 - Wiki integrada opcional via DokuWiki.
 - ROADMAP público com 4 fases até a 1.0.0.
 
-[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.1
 [0.3.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.0
 [0.2.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fabgcruz/bagre/commit/5815508
