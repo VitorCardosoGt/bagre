@@ -32,3 +32,6 @@ infra/tls/
 
 # Wiki seeds (pages + conf) ficam versionados em wiki/
 # Volume runtime fica no Docker, fora do repo
+
+# Playwright cache (snapshots + console logs durante captura de screenshots)
+.playwright-mcp/
