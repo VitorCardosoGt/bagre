@@ -2,6 +2,7 @@ import { prisma } from '../db.js';
 import { expandCidr, normalizeAddress, detectIpVersion } from '../cidr.js';
 import { auditFromReq } from '../audit.js';
 import { snapshotSubnet } from '../integrations/utilization-snapshot.js';
+import { validateSubnet } from '../validation/engine.js';
 
 export async function registerSubnets(app) {
   app.get('/api/subnets/:id', async (req) => {
@@ -141,6 +142,15 @@ export async function registerSubnets(app) {
       reply.code(400);
       return { error: 'siteId e name são obrigatórios' };
     }
+
+    // Validation engine — roda regras configuradas antes de qualquer side-effect
+    const candidate = { siteId: Number(siteId), name, cidr };
+    const { errors, warnings } = await validateSubnet(prisma, candidate);
+    if (errors.length) {
+      reply.code(422);
+      return { error: 'validation_failed', violations: errors, warnings };
+    }
+
     let addresses = [];
     if (cidr) {
       try {
@@ -174,7 +184,7 @@ export async function registerSubnets(app) {
       action: 'create',
       after: { ...subnet, ipsCreated: addresses.length },
     });
-    return { ...subnet, ipsCreated: addresses.length };
+    return { ...subnet, ipsCreated: addresses.length, warnings };
   });
 
   app.patch('/api/subnets/:id', async (req) => {

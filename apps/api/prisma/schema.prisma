@@ -241,6 +241,21 @@ model AzureSubnet {
 }
 
 // Single-row config (id=1) for the Zabbix integration. Admin manages via UI.
+// Sistema de validação de subnets — regras pluggable executadas antes de
+// salvar uma subnet nova ou alterada. Rules built-in: no-overlap,
+// within-master, size-range, name-pattern.
+model ValidationRule {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // identificador legível, ex: "global-no-overlap"
+  enabled   Boolean  @default(true)
+  ruleType  String // "no-overlap" | "within-master" | "size-range" | "name-pattern"
+  scope     String? // null = global; ou siteId stringificado; ou "provider:aws"
+  config    Json     @default("{}") // params específicos da rule (ex: { minPrefix: 24, maxPrefix: 16 })
+  severity  String   @default("error") // "error" bloqueia; "warning" só avisa
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Single-row config (id=1) for the DNS integration (push hostnames Bagre→DNS).
 // V1 suporta PowerDNS. BIND/Route53/Cloudflare em iterações futuras (campo
 // `provider` permite distinguir).
