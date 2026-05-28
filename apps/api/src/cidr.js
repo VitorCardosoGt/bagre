@@ -29,7 +29,10 @@ export function parseIpv4Cidr(cidr) {
     if (Number(o) > 255) return null;
   }
   const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
-  const network = ipToInt(ip) & mask;
+  // `&` em JS opera em int32 signed — sem o `>>> 0` final, qualquer network
+  // com o bit alto setado (≥ 128.0.0.0) volta como negativo. Esse era o
+  // bug #29 (192.168.x.x quebrava enquanto 10.x.x.x funcionava).
+  const network = (ipToInt(ip) & mask) >>> 0;
   const broadcast = (network | (~mask >>> 0)) >>> 0;
   return { version: 4, network, broadcast, prefix, mask };
 }

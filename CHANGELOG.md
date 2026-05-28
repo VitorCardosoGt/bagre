@@ -10,6 +10,9 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+### Corrigido
+- **Criar subnet com CIDR ≥ 128.0.0.0 dava erro de "expandiria para 4294967552 IPs"** ([#29](https://github.com/fabgcruz/bagre/issues/29), reportado por @ruiluna) — bug antigo no `parseIpv4Cidr` em `apps/api/src/cidr.js`. JS faz `&` em int32 signed; sem `>>> 0` no resultado, qualquer network com bit alto setado (192.168.x.x, 172.16.x.x, e qualquer público) voltava como negativo, fazendo `broadcast - network + 1` explodir pra ~4B. 10.x.x.x funcionava porque é abaixo do bit de sinal. Adicionado `>>> 0` na linha de cálculo do network.
+
 ### Adicionado
 - **Sistema de validação de subnets** ([#27](https://github.com/fabgcruz/bagre/issues/27)) — 4 regras built-in (`no-overlap`, `within-master`, `size-range`, `name-pattern`), severity `error` (bloqueia) ou `warning` (só avisa), scope global / por site / por provider. Engine roda em `POST /api/subnets` antes de qualquer side-effect — erros retornam HTTP 422 com `violations[]`; warnings retornam no payload do subnet criado. Endpoint `POST /api/validation/test-subnet` permite preview sem criar. CRUD admin em `/api/validation/rules`. Plugin custom em arquivo via `apps/api/plugins/validation/*.js` na próxima iteração.
 - **Gerador de tutoriais via Playwright** ([#24](https://github.com/fabgcruz/bagre/issues/24) parcial) — `scripts/generate-tutorial-screenshots.mjs` automatiza captura de screenshots + montagem de markdown narrativo. 3 tutoriais base prontos: `quickstart`, `connect-aws`, `cidr`. `docs/tutorials/README.md` documenta como rodar, estender e adicionar novos tutoriais. CI workflow + tutoriais adicionais ficam pra próxima iteração.
