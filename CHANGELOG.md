@@ -10,6 +10,19 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+---
+
+## [0.5.0] — 2026-05-28
+
+**Tema:** Cleanup completo do backlog + integrações maduras com UI.
+
+Release que fecha 8 issues numa tacada, entrega DNS sync e validation engine end-to-end (backend + UI), CIDR avançado, bulk ops, IPv6 first-class, importação universal, histórico de capacidade, primeira correção de bug reportado pela comunidade, e design specs pra próximos grandes projetos.
+
+### UI nova
+- **DNS Settings** (`/admin/integrations/dns`) — picker de provider (PowerDNS ativo; BIND/Route53/Cloudflare como "em breve"), config form, test connection, **preview do diff** com cards coloridos por ação, e Sync agora com confirmação.
+- **Validação** (`/admin/validation`) — lista de regras com toggle de enabled inline, modal de criação/edição com picker visual de tipo, escopo, severity, e editor JSON com hint do shape esperado.
+- **Integrações status** agrega DNS como mais um card no painel consolidado.
+
 ### Corrigido
 - **Criar subnet com CIDR ≥ 128.0.0.0 dava erro de "expandiria para 4294967552 IPs"** ([#29](https://github.com/fabgcruz/bagre/issues/29), reportado por @ruiluna) — bug antigo no `parseIpv4Cidr` em `apps/api/src/cidr.js`. JS faz `&` em int32 signed; sem `>>> 0` no resultado, qualquer network com bit alto setado (192.168.x.x, 172.16.x.x, e qualquer público) voltava como negativo, fazendo `broadcast - network + 1` explodir pra ~4B. 10.x.x.x funcionava porque é abaixo do bit de sinal. Adicionado `>>> 0` na linha de cálculo do network.
 
@@ -185,7 +198,8 @@ Versão inicial publicada após o fork pra opensource.
 - Wiki integrada opcional via DokuWiki.
 - ROADMAP público com 4 fases até a 1.0.0.
 
-[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.5.0
 [0.4.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.4.0
 [0.3.2]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.2
 [0.3.1]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.1
