@@ -19,6 +19,8 @@ import SsoSettings from './pages/SsoSettings.jsx';
 import SsoCallback from './pages/SsoCallback.jsx';
 import ZabbixSettings from './pages/ZabbixSettings.jsx';
 import PrometheusSettings from './pages/PrometheusSettings.jsx';
+import DnsSettings from './pages/DnsSettings.jsx';
+import ValidationRules from './pages/ValidationRules.jsx';
 import NetworkHealth from './pages/NetworkHealth.jsx';
 import IntegrationsStatus from './pages/IntegrationsStatus.jsx';
 import CloudAccounts from './pages/CloudAccounts.jsx';
@@ -134,6 +136,22 @@ export default function App() {
                   element={
                     <Protected role="ADMIN">
                       <PrometheusSettings />
+                    </Protected>
+                  }
+                />
+                <Route
+                  path="/admin/integrations/dns"
+                  element={
+                    <Protected role="ADMIN">
+                      <DnsSettings />
+                    </Protected>
+                  }
+                />
+                <Route
+                  path="/admin/validation"
+                  element={
+                    <Protected role="ADMIN">
+                      <ValidationRules />
                     </Protected>
                   }
                 />

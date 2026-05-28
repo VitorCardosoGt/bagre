@@ -2,6 +2,7 @@ import { prisma } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { testConnection as testZabbix, getConfig as getZabbixCfg, isConfigured as isZabbixConfigured } from '../integrations/zabbix.js';
 import { getConfig as getPromCfg, isConfigured as isPromConfigured } from '../integrations/prometheus.js';
+import * as powerdns from '../integrations/dns/powerdns.js';
 import { getConfig as getOidcCfg, isConfigured as isOidcConfigured, testDiscovery as testOidc } from '../auth-providers/oidc.js';
 
 function ageMs(date) {
@@ -57,6 +58,29 @@ async function prometheusStatus() {
   };
 }
 
+async function dnsStatus() {
+  let cfg = await prisma.dnsConfig.findUnique({ where: { id: 1 } });
+  if (!cfg) cfg = await prisma.dnsConfig.create({ data: { id: 1 } });
+  const configured = powerdns.isConfigured(cfg);
+  return {
+    key: 'dns',
+    name: cfg.provider === 'powerdns' ? 'PowerDNS' : (cfg.provider || 'DNS'),
+    icon: '🌐',
+    description: 'Push de hostnames do IPAM como A records numa zona DNS.',
+    configured,
+    enabled: cfg.enabled,
+    lastTest: cfg.lastTestedAt
+      ? { at: cfg.lastTestedAt, ok: cfg.lastTestStatus === 'ok', message: cfg.lastTestMessage }
+      : null,
+    lastSync: cfg.lastSyncAt
+      ? { at: cfg.lastSyncAt, ok: cfg.lastSyncStatus === 'ok', message: cfg.lastSyncMessage, stats: cfg.lastSyncStats }
+      : null,
+    intervalMinutes: cfg.intervalMinutes,
+    configUrl: '/admin/integrations/dns',
+    healthEndpoint: '/api/admin/dns-config/test',
+  };
+}
+
 async function oidcStatus() {
   const cfg = await getOidcCfg();
   const configured = isOidcConfigured(cfg);
@@ -101,15 +125,17 @@ function deriveOverall(integrations) {
 
 export async function registerIntegrationsStatusRoutes(app) {
   app.get('/api/admin/integrations/status', { preHandler: requireAdmin }, async () => {
-    const [zabbix, prometheus, oidc, events] = await Promise.all([
+    const [zabbix, prometheus, dns, oidc, events] = await Promise.all([
       zabbixStatus(),
       prometheusStatus(),
+      dnsStatus(),
       oidcStatus(),
       prisma.auditLog.findMany({
         where: {
           OR: [
             { entity: 'zabbix_config' },
             { entity: 'prometheus_config' },
+            { entity: 'dns_config' },
             { entity: 'oidc_config' },
             { entity: 'user', action: 'login' },
           ],
@@ -118,7 +144,7 @@ export async function registerIntegrationsStatusRoutes(app) {
         take: 12,
       }),
     ]);
-    const integrations = [zabbix, prometheus, oidc];
+    const integrations = [zabbix, prometheus, dns, oidc];
     const overall = deriveOverall(integrations);
     return { overall, integrations, events };
   });

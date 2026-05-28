@@ -137,6 +137,26 @@ export const api = {
   testPrometheusConfig: () => request('/admin/prometheus-config/test', { method: 'POST' }),
   syncPrometheus: () => request('/admin/prometheus-config/sync', { method: 'POST' }),
 
+  // DNS (PowerDNS)
+  dnsConfig: () => request('/admin/dns-config'),
+  updateDnsConfig: (data) =>
+    request('/admin/dns-config', { method: 'PATCH', body: JSON.stringify(data) }),
+  testDnsConfig: () => request('/admin/dns-config/test', { method: 'POST' }),
+  dnsPreview: () => request('/admin/dns-config/preview'),
+  dnsSync: () => request('/admin/dns-config/sync', { method: 'POST' }),
+
+  // Validation rules
+  validationRules: () => request('/validation/rules'),
+  validationRuleTypes: () => request('/validation/rule-types'),
+  createValidationRule: (data) =>
+    request('/validation/rules', { method: 'POST', body: JSON.stringify(data) }),
+  updateValidationRule: (id, data) =>
+    request(`/validation/rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteValidationRule: (id) =>
+    request(`/validation/rules/${id}`, { method: 'DELETE' }),
+  testSubnetValidation: (candidate) =>
+    request('/validation/test-subnet', { method: 'POST', body: JSON.stringify(candidate) }),
+
   // Network health
   networkHealth: () => request('/network-health'),
 

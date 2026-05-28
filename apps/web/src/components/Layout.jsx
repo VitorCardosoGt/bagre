@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Inbox,
   Cloud,
+  Shield,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -45,6 +46,7 @@ function buildWikiUrl() {
 const NAV_ADMIN = [
   { to: '/admin/integrations', label: 'Integrações', icon: Plug2 },
   { to: '/admin/cloud-accounts', label: 'Cloud Accounts', icon: Cloud },
+  { to: '/admin/validation', label: 'Validação', icon: Shield },
   { to: '/admin/pending-discoveries', label: 'Aprovações', icon: Inbox, badge: 'pending' },
   { to: '/admin/network-health', label: 'Saúde da rede', icon: Stethoscope },
   { to: '/admin/users', label: 'Usuários', icon: Users },
