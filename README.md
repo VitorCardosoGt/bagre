@@ -27,13 +27,25 @@ sensíveis, detectando tudo ao seu redor. O Bagre IPAM segue a mesma lógica:
 - **Silencioso, resistente e eficiente**
 - **Mantém tudo organizado e sob controle**
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Dashboard](docs/screenshots/02-dashboard.png) | ![Subnet detail](docs/screenshots/04-subnet-detail.png) |
+| **Dashboard** — resumo de uso + atalhos | **Subnet detail** — histórico de utilização + lista de IPs editáveis |
+| ![CIDR calculator](docs/screenshots/05-cidr-calculator.png) | ![Cloud Accounts](docs/screenshots/06-cloud-accounts.png) |
+| **Calculadora CIDR avançada** — split, merge, next-free com detecção de overlap | **Cloud Accounts** — sync AWS/Azure/GCP + FinOps idle public IPs |
+
+Mais prints em [`docs/screenshots/`](docs/screenshots/).
+
 ## O que o Bagre faz
 
 - Catálogo central de sites, sub-redes (CIDR) e endereços IP com auditoria completa
 - Alocação manual ou automática de IPs respeitando o range da sub-rede
 - Importação de inventários existentes (XLSX/CSV)
-- **Cloud sync (AWS)** — conecta sua conta AWS via Access Key ou Assume Role, sincroniza VPCs/subnets/ENIs/Elastic IPs e mostra IPs públicos ociosos sangrando custo (relatório FinOps). Azure e GCP no roadmap.
-- API REST para integração com ferramentas de descoberta (Zabbix, scanners de rede, OTEL)
+- **Cloud sync multi-provider** — conecta AWS / Azure / GCP simultaneamente, sincroniza VPCs/VNets/subnetworks, NICs e IPs públicos. Mostra IPs ociosos sangrando custo (relatório FinOps unificado).
+- **Descoberta automática via Zabbix e Prometheus** — hosts viram pending discoveries; aprovação em 1 clique
+- API REST para integração com Terraform, scripts próprios, OTEL
 - Login local + SSO via OIDC (Microsoft Entra ID, Keycloak, qualquer provider compatível)
 - RBAC com perfis ADMIN/READER e wiki integrada via DokuWiki
 - Métricas Prometheus em `/metrics`
