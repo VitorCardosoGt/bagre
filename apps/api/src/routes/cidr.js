@@ -12,6 +12,7 @@
 
 import { requireAuth } from '../auth.js';
 import { prisma } from '../db.js';
+import { parseIpv6Cidr, detectIpVersion } from '../cidr.js';
 
 const CIDR_RE = /^(\d{1,3}(?:\.\d{1,3}){3})\/(\d{1,2})$/;
 const MAX_SPLIT_RESULTS = 4096;
@@ -73,6 +74,24 @@ function overlaps(a, b) {
 export async function registerCidrRoutes(app) {
   app.get('/api/cidr/parse', { preHandler: requireAuth }, async (req, reply) => {
     try {
+      // IPv6: parse básico (sem cruzamento de overlap com IPAM v4 — diferentes
+      // espaços, sem overlap possível na prática)
+      if (detectIpVersion(req.query.cidr) === 6) {
+        const v6 = parseIpv6Cidr(String(req.query.cidr).trim());
+        if (!v6) {
+          reply.code(400);
+          return { error: 'CIDR IPv6 inválido' };
+        }
+        return {
+          version: 6,
+          cidr: `${v6.networkStr}/${v6.prefix}`,
+          prefix: v6.prefix,
+          network: v6.networkStr,
+          last: v6.lastAddrStr,
+          total: '2^' + (128 - v6.prefix) + ' endereços',
+          note: 'Subnets IPv6 não pré-enumeram IPs. Use POST /api/subnets/:id/ips para adicionar endereços específicos. Operações split/merge/next-free ainda não suportadas para IPv6.',
+        };
+      }
       const info = parseCidr(req.query.cidr);
       // Cruza com IPAM: subnets que sobrepõem este CIDR
       const subnets = await prisma.subnet.findMany({

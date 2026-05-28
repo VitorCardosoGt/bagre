@@ -10,6 +10,15 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+### Adicionado
+- **Suporte IPv6 first-class — fase 1** ([#10](https://github.com/fabgcruz/2bagre/issues/10)) — schema já era agnóstico, agora os helpers de CIDR também. `apps/api/src/cidr.js` ganha `parseIpv6Cidr` (BigInt 128-bit), `detectIpVersion`, `normalizeAddress` (compactação canônica `::`). `expandCidr` retorna `[]` para IPv6 — subnets v6 são criadas sem pré-enumeração de IPs (um /64 tem 18.4 quintilhões de endereços; enumerar não escala).
+- **`POST /api/subnets/:id/ips`** — novo endpoint para criar IPs ad-hoc em uma subnet. Único caminho viável para alocar endereços IPv6, mas também serve pra IPv4 quando o operador precisa adicionar um IP fora do range pré-criado (ex: IPs secundários em interfaces multi-tap).
+- **`GET /api/cidr/parse`** suporta IPv6 — retorna network, last address e total ("2^N"). Operações split/merge/next-free ainda são IPv4-only (próxima iteração).
+- **Screenshots no README** ([#9](https://github.com/fabgcruz/bagre/issues/9)) — galeria 2x2 com dashboard, subnet detail, calculadora CIDR e cloud accounts, capturados via Playwright em viewport 1440x900. Repositório agora mostra visualmente o que o produto faz antes do leitor rolar.
+
+### Mudado
+- `next-free-ip` na subnet retorna mensagem específica quando a subnet é IPv6 (em vez do genérico "nenhum IP livre"), apontando o operador para o novo endpoint de criação ad-hoc.
+
 ---
 
 ## [0.4.0] — 2026-05-28

@@ -1,0 +1,30 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - img "Bagre" [ref=e6]
+    - generic [ref=e7]: Bagre
+    - generic [ref=e8]: IPAM opensource
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - heading "Bem-vindo de volta" [level=1] [ref=e11]
+      - paragraph [ref=e12]: Entre com suas credenciais para continuar
+    - generic [ref=e13]:
+      - generic [ref=e14]: E-mail
+      - generic [ref=e15]:
+        - img [ref=e16]
+        - textbox "seu@email.com" [active] [ref=e19]
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]: Senha
+        - link "Esqueci a senha" [ref=e23] [cursor=pointer]:
+          - /url: /reset
+      - generic [ref=e24]:
+        - img [ref=e25]
+        - textbox "••••••••" [ref=e28]
+    - button "Entrar" [ref=e29] [cursor=pointer]:
+      - img [ref=e30]
+      - text: Entrar
+    - generic [ref=e33]:
+      - text: Ainda não tem conta?
+      - link "Criar conta" [ref=e34] [cursor=pointer]:
+        - /url: /signup
+  - paragraph [ref=e35]: © 2026 Bagre · IPAM

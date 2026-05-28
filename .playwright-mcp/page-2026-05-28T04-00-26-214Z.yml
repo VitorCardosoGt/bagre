@@ -1,0 +1,144 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e6]:
+      - img "Bagre" [ref=e7]
+      - generic [ref=e8]:
+        - generic [ref=e9]: Bagre
+        - generic [ref=e10]: IPAM
+    - navigation [ref=e11]:
+      - link "Dashboard" [ref=e12] [cursor=pointer]:
+        - /url: /
+        - img [ref=e13]
+        - generic [ref=e18]: Dashboard
+      - link "Sites & Subnets" [ref=e19] [cursor=pointer]:
+        - /url: /sites
+        - img [ref=e20]
+        - generic [ref=e25]: Sites & Subnets
+      - link "Equipamentos" [ref=e26] [cursor=pointer]:
+        - /url: /devices
+        - img [ref=e27]
+        - generic [ref=e30]: Equipamentos
+      - link "Catálogos" [ref=e31] [cursor=pointer]:
+        - /url: /catalogs
+        - img [ref=e32]
+        - generic [ref=e36]: Catálogos
+      - link "Calculadora CIDR" [ref=e37] [cursor=pointer]:
+        - /url: /cidr
+        - img [ref=e38]
+        - generic [ref=e40]: Calculadora CIDR
+      - link "Integrações" [ref=e41] [cursor=pointer]:
+        - /url: /admin/integrations
+        - img [ref=e42]
+        - generic [ref=e44]: Integrações
+      - link "Cloud Accounts" [ref=e45] [cursor=pointer]:
+        - /url: /admin/cloud-accounts
+        - img [ref=e46]
+        - generic [ref=e48]: Cloud Accounts
+      - link "Aprovações" [ref=e49] [cursor=pointer]:
+        - /url: /admin/pending-discoveries
+        - img [ref=e50]
+        - generic [ref=e53]: Aprovações
+      - link "Saúde da rede" [ref=e54] [cursor=pointer]:
+        - /url: /admin/network-health
+        - img [ref=e55]
+        - generic [ref=e59]: Saúde da rede
+      - link "Usuários" [ref=e60] [cursor=pointer]:
+        - /url: /admin/users
+        - img [ref=e61]
+        - generic [ref=e66]: Usuários
+      - link "Auditoria" [ref=e67] [cursor=pointer]:
+        - /url: /admin/audit
+        - img [ref=e68]
+        - generic [ref=e72]: Auditoria
+      - link "Documentação API" [ref=e73] [cursor=pointer]:
+        - /url: /integrations
+        - img [ref=e74]
+        - generic [ref=e76]: Documentação API
+      - link "Wiki" [ref=e77] [cursor=pointer]:
+        - /url: http://localhost:8090
+        - img [ref=e78]
+        - generic [ref=e80]: Wiki
+        - img [ref=e81]
+    - generic [ref=e85]:
+      - button "Tema escuro" [ref=e86] [cursor=pointer]:
+        - img [ref=e87]
+        - generic [ref=e89]: Tema escuro
+      - generic [ref=e90]:
+        - text: Sistema desenvolvido por
+        - text: Fabricio Cruz
+  - main [ref=e91]:
+    - generic [ref=e92]:
+      - generic [ref=e94]:
+        - img [ref=e95]
+        - textbox "Buscar IP, hostname, subnet… (⌘K)" [ref=e98]:
+          - /placeholder: Buscar IP, hostname, subnet…    (⌘K)
+      - button "AD Administrator ADMIN" [ref=e100] [cursor=pointer]:
+        - generic [ref=e101]: AD
+        - generic [ref=e102]:
+          - generic [ref=e103]: Administrator
+          - generic [ref=e104]: ADMIN
+        - img [ref=e105]
+    - generic [ref=e108]:
+      - button "Voltar para sites" [ref=e109] [cursor=pointer]:
+        - img [ref=e110]
+        - text: Voltar para sites
+      - generic [ref=e114]:
+        - heading "Subnet" [level=1] [ref=e115]
+        - paragraph [ref=e116]: Cada linha é um IP. Clique em qualquer célula (Tipo, Hostname, Função) para editar. Use os botões da direita para reservar ou liberar.
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - text: "0"
+            - generic [ref=e121]: / 0
+          - generic [ref=e122]: 0.0% em uso
+        - generic [ref=e125]:
+          - generic [ref=e126]: Em uso
+          - generic [ref=e128]: Reservado
+          - generic [ref=e130]: Livre
+      - generic [ref=e132]:
+        - generic [ref=e133]:
+          - heading "Histórico de utilização" [level=2] [ref=e135]
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - button "7d" [ref=e138] [cursor=pointer]
+              - button "30d" [ref=e139] [cursor=pointer]
+              - button "90d" [ref=e140] [cursor=pointer]
+            - button "Capturar agora" [ref=e141] [cursor=pointer]:
+              - img [ref=e142]
+              - text: Capturar agora
+        - generic [ref=e145]: Carregando…
+      - generic [ref=e146]:
+        - generic [ref=e147]:
+          - img [ref=e148]
+          - textbox "Buscar IP, hostname, função…" [ref=e151]
+        - generic [ref=e152]:
+          - button "Todos" [ref=e153] [cursor=pointer]
+          - button "Em uso" [ref=e154] [cursor=pointer]
+          - button "Reservados" [ref=e155] [cursor=pointer]
+          - button "Livres" [ref=e156] [cursor=pointer]
+        - button "Recarregar" [ref=e157] [cursor=pointer]:
+          - img [ref=e158]
+          - text: Recarregar
+        - button "Alocar próximo livre" [ref=e163] [cursor=pointer]:
+          - img [ref=e164]
+          - text: Alocar próximo livre
+      - table [ref=e167]:
+        - rowgroup [ref=e168]:
+          - row "Selecionar/limpar todos visíveis Endereço Status Equipamento Hostname MAC / Função Ações" [ref=e169]:
+            - columnheader "Selecionar/limpar todos visíveis" [ref=e170]:
+              - checkbox "Selecionar/limpar todos visíveis" [ref=e171] [cursor=pointer]
+            - columnheader "Endereço" [ref=e172]
+            - columnheader "Status" [ref=e173]
+            - columnheader "Equipamento" [ref=e174]:
+              - generic [ref=e175]:
+                - text: Equipamento
+                - img [ref=e177]
+            - columnheader "Hostname" [ref=e180]
+            - columnheader "MAC / Função" [ref=e181]:
+              - generic [ref=e182]:
+                - text: MAC / Função
+                - img [ref=e184]
+            - columnheader "Ações" [ref=e187]
+        - rowgroup [ref=e188]:
+          - row "Carregando…" [ref=e189]:
+            - cell "Carregando…" [ref=e190]

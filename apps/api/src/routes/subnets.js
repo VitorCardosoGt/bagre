@@ -1,5 +1,5 @@
 import { prisma } from '../db.js';
-import { expandCidr } from '../cidr.js';
+import { expandCidr, normalizeAddress, detectIpVersion } from '../cidr.js';
 import { auditFromReq } from '../audit.js';
 import { snapshotSubnet } from '../integrations/utilization-snapshot.js';
 
@@ -25,10 +25,62 @@ export async function registerSubnets(app) {
       select: { id: true, address: true, subnetId: true, status: true },
     });
     if (!next) {
+      // Subnet IPv6 não pré-enumera; ipv4 esgotada — ambos retornam vazio.
+      const subnet = await prisma.subnet.findUnique({ where: { id }, select: { cidr: true } });
+      const isV6 = subnet?.cidr && detectIpVersion(subnet.cidr) === 6;
       reply.code(404);
-      return { error: 'nenhum IP livre nesta subnet' };
+      return {
+        error: isV6
+          ? 'subnet IPv6 não pré-enumera. Use POST /api/subnets/:id/ips para criar um endereço específico.'
+          : 'nenhum IP livre nesta subnet',
+      };
     }
     return next;
+  });
+
+  // POST /api/subnets/:id/ips — cria um IP ad-hoc na subnet.
+  // Único caminho viável para subnets IPv6 (que NÃO pré-enumeram).
+  // Também funciona em subnets v4 — útil pra adicionar IPs fora do range
+  // calculado (ex: secondary IPs em interfaces multi-tap).
+  app.post('/api/subnets/:id/ips', async (req, reply) => {
+    const id = Number(req.params.id);
+    const { address, hostname, type, function: fn, status, notes } = req.body || {};
+    if (!address || !String(address).trim()) {
+      reply.code(400);
+      return { error: 'address é obrigatório' };
+    }
+    const normalized = normalizeAddress(String(address).trim());
+    const subnet = await prisma.subnet.findUnique({ where: { id } });
+    if (!subnet) {
+      reply.code(404);
+      return { error: 'subnet não encontrada' };
+    }
+    try {
+      const ip = await prisma.ipAddress.create({
+        data: {
+          subnetId: id,
+          address: normalized,
+          hostname: hostname || null,
+          type: type || null,
+          function: fn || null,
+          notes: notes || null,
+          status: status || (hostname || type || fn ? 'USED' : 'FREE'),
+        },
+      });
+      await auditFromReq(req, {
+        entity: 'ip',
+        entityId: ip.id,
+        action: 'create',
+        after: ip,
+      });
+      return ip;
+    } catch (err) {
+      if (err.code === 'P2002') {
+        reply.code(409);
+        return { error: `IP ${normalized} já existe nesta subnet` };
+      }
+      throw err;
+    }
   });
 
   app.get('/api/subnets/:id/utilization-history', async (req) => {
@@ -93,6 +145,8 @@ export async function registerSubnets(app) {
     if (cidr) {
       try {
         addresses = expandCidr(cidr);
+        // expandCidr retorna [] para IPv6 — subnet é criada sem pré-enumeração.
+        // Operador adiciona IPs específicos via POST /api/subnets/:id/ips.
       } catch (err) {
         reply.code(400);
         return { error: err.message };
