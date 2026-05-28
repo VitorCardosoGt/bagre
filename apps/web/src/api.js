@@ -192,6 +192,10 @@ export const api = {
   cidrReference: () => request('/cidr-reference'),
 
   // CIDR utilities (advanced calc — split, merge, next-free, parse with IPAM overlap)
+  // Bulk operations on IPs (admin)
+  ipsBulk: (payload) =>
+    request('/ips/bulk', { method: 'POST', body: JSON.stringify(payload) }),
+
   cidrParse: (cidr) => request(`/cidr/parse?cidr=${encodeURIComponent(cidr)}`),
   cidrSplit: (cidr, prefix) =>
     request('/cidr/split', { method: 'POST', body: JSON.stringify({ cidr, prefix }) }),

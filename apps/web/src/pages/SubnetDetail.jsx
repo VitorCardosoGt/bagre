@@ -12,12 +12,16 @@ import {
   CircleDot,
   Plus,
   Zap,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import AllocateIpModal from '../components/AllocateIpModal.jsx';
+import Modal from '../components/Modal.jsx';
+import { useToast } from '../components/Toast.jsx';
 
 function EditableCell({ value, onSave, placeholder = '—', disabled }) {
   const [editing, setEditing] = useState(false);
@@ -107,7 +111,10 @@ export default function SubnetDetail() {
 
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [selected, setSelected] = useState(() => new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const qc = useQueryClient();
+  const toast = useToast();
 
   const { data: subnet } = useQuery({
     queryKey: ['subnet', subnetId],
@@ -138,6 +145,46 @@ export default function SubnetDetail() {
     mutationFn: (id) => api.reserveIp(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subnet', subnetId] }),
   });
+
+  const bulkMut = useMutation({
+    mutationFn: (payload) => api.ipsBulk(payload),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['subnet', subnetId] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+      setSelected(new Set());
+      setBulkEditOpen(false);
+      if (r.failed?.length) {
+        toast.error(`Bulk ${r.action}: ${r.updated}/${r.requested} OK · ${r.failed.length} falharam`);
+      } else {
+        toast.success(`Bulk ${r.action}: ${r.updated} IP${r.updated > 1 ? 's' : ''} atualizado${r.updated > 1 ? 's' : ''}`);
+      }
+    },
+    onError: (e) => toast.error(`Bulk falhou: ${e.message}`),
+  });
+
+  function toggleSelected(id) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleAllVisible() {
+    setSelected((s) => {
+      const visibleIds = ips.map((ip) => ip.id);
+      const allSelected = visibleIds.every((id) => s.has(id));
+      const next = new Set(s);
+      if (allSelected) {
+        for (const id of visibleIds) next.delete(id);
+      } else {
+        for (const id of visibleIds) next.add(id);
+      }
+      return next;
+    });
+  }
+  // Limpa seleção quando filtros mudam pra não confundir
+  useEffect(() => setSelected(new Set()), [q, status]);
 
   const [allocateModal, setAllocateModal] = useState({ open: false, ip: null });
   const [allocateError, setAllocateError] = useState(null);
@@ -279,6 +326,24 @@ export default function SubnetDetail() {
         <table className="w-full text-sm table-zebra">
           <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase tracking-wider text-slate-500">
             <tr>
+              {canEdit && (
+                <th className="px-3 py-2.5 w-8">
+                  <input
+                    type="checkbox"
+                    checked={ips.length > 0 && ips.every((ip) => selected.has(ip.id))}
+                    ref={(el) => {
+                      if (el) {
+                        const some = ips.some((ip) => selected.has(ip.id));
+                        const all = ips.length > 0 && ips.every((ip) => selected.has(ip.id));
+                        el.indeterminate = some && !all;
+                      }
+                    }}
+                    onChange={toggleAllVisible}
+                    className="accent-brand-600 cursor-pointer"
+                    title="Selecionar/limpar todos visíveis"
+                  />
+                </th>
+              )}
               <th className="px-3 py-2.5 w-36">Endereço</th>
               <th className="px-3 py-2.5 w-28">Status</th>
               <th className="px-3 py-2.5">
@@ -300,14 +365,14 @@ export default function SubnetDetail() {
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {isLoading && (
               <tr>
-                <td colSpan={canEdit ? 6 : 5} className="p-8 text-center text-slate-500">
+                <td colSpan={canEdit ? 7 : 5} className="p-8 text-center text-slate-500">
                   Carregando…
                 </td>
               </tr>
             )}
             {!isLoading && ips.length === 0 && (
               <tr>
-                <td colSpan={canEdit ? 6 : 5} className="p-8 text-center text-slate-500">
+                <td colSpan={canEdit ? 7 : 5} className="p-8 text-center text-slate-500">
                   Nenhum endereço com esse filtro.
                 </td>
               </tr>
@@ -317,8 +382,18 @@ export default function SubnetDetail() {
                 key={ip.id}
                 className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
                   highlightIp === ip.address ? 'bg-amber-50 dark:bg-amber-900/20' : ''
-                }`}
+                } ${selected.has(ip.id) ? 'bg-brand-50/40 dark:bg-brand-900/15' : ''}`}
               >
+                {canEdit && (
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(ip.id)}
+                      onChange={() => toggleSelected(ip.id)}
+                      className="accent-brand-600 cursor-pointer"
+                    />
+                  </td>
+                )}
                 <td className="px-3 py-2">
                   <code className="font-mono text-xs">{ip.address}</code>
                 </td>
@@ -415,7 +490,149 @@ export default function SubnetDetail() {
         }}
         onSubmit={(payload) => allocateMut.mutate({ ipId: allocateModal.ip.id, payload })}
       />
+
+      {canEdit && selected.size > 0 && (
+        <BulkActionBar
+          count={selected.size}
+          loading={bulkMut.isPending}
+          onClear={() => setSelected(new Set())}
+          onRelease={() => {
+            if (confirm(`Liberar ${selected.size} IP(s)? Hostname, tipo, função e device serão limpos; status → FREE.`)) {
+              bulkMut.mutate({ ipIds: Array.from(selected), action: 'release' });
+            }
+          }}
+          onReserve={() => {
+            bulkMut.mutate({ ipIds: Array.from(selected), action: 'reserve' });
+          }}
+          onEdit={() => setBulkEditOpen(true)}
+        />
+      )}
+
+      <BulkEditModal
+        open={bulkEditOpen}
+        count={selected.size}
+        loading={bulkMut.isPending}
+        onClose={() => setBulkEditOpen(false)}
+        onSubmit={(data) =>
+          bulkMut.mutate({ ipIds: Array.from(selected), action: 'update', data })
+        }
+      />
     </div>
+  );
+}
+
+function BulkActionBar({ count, onClear, onRelease, onReserve, onEdit, loading }) {
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 card-elevated px-4 py-3 flex items-center gap-3 shadow-lg border border-brand-200 dark:border-brand-700 bg-white dark:bg-slate-900 animate-slide-up">
+      <span className="text-sm font-medium">
+        <strong className="text-brand-700 dark:text-brand-300">{count}</strong> selecionado{count > 1 ? 's' : ''}
+      </span>
+      <span className="text-slate-300">|</span>
+      <button
+        onClick={onEdit}
+        disabled={loading}
+        className="text-xs px-3 py-1.5 rounded bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-300 inline-flex items-center gap-1 disabled:opacity-50"
+      >
+        <Edit3 size={12} /> Editar campos
+      </button>
+      <button
+        onClick={onReserve}
+        disabled={loading}
+        className="text-xs px-3 py-1.5 rounded bg-amber-50 text-amber-700 hover:bg-amber-100 inline-flex items-center gap-1 disabled:opacity-50"
+      >
+        <CircleDot size={12} /> Reservar
+      </button>
+      <button
+        onClick={onRelease}
+        disabled={loading}
+        className="text-xs px-3 py-1.5 rounded bg-rose-50 text-rose-700 hover:bg-rose-100 inline-flex items-center gap-1 disabled:opacity-50"
+      >
+        <Trash2 size={12} /> Liberar
+      </button>
+      <span className="text-slate-300">|</span>
+      <button
+        onClick={onClear}
+        disabled={loading}
+        className="text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 disabled:opacity-50"
+        title="Limpar seleção"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
+function BulkEditModal({ open, count, onClose, onSubmit, loading }) {
+  const [type, setType] = useState('');
+  const [fn, setFn] = useState('');
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setType('');
+      setFn('');
+      setNotes('');
+    }
+  }, [open]);
+
+  function submit(e) {
+    e.preventDefault();
+    const data = {};
+    if (type.trim()) data.type = type.trim();
+    if (fn.trim()) data.function = fn.trim();
+    if (notes.trim()) data.notes = notes.trim();
+    if (Object.keys(data).length === 0) return;
+    onSubmit(data);
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Editar ${count} IP${count > 1 ? 's' : ''} em massa`}>
+      <form onSubmit={submit} className="space-y-3">
+        <p className="text-xs text-slate-500">
+          Preencha só os campos que quer aplicar. Vazios são ignorados. IPs com status FREE viram USED se você preencher hostname/tipo/função.
+        </p>
+        <div>
+          <label className="text-xs font-medium text-slate-600 block mb-1">Tipo</label>
+          <input
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="input w-full text-sm"
+            placeholder="ex: Servidor Linux"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-slate-600 block mb-1">Função</label>
+          <input
+            value={fn}
+            onChange={(e) => setFn(e.target.value)}
+            className="input w-full text-sm"
+            placeholder="ex: Production · Database"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-slate-600 block mb-1">Notas</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            className="input w-full text-sm"
+            placeholder="Comentário aplicado a todos"
+          />
+        </div>
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="text-sm px-4 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading || (!type.trim() && !fn.trim() && !notes.trim())}
+            className="btn-primary disabled:opacity-50"
+          >
+            {loading ? 'Aplicando…' : `Aplicar a ${count}`}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

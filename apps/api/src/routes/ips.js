@@ -1,7 +1,10 @@
 import { prisma } from '../db.js';
 import { audit, auditFromReq } from '../audit.js';
+import { requireAdmin } from '../auth.js';
 
 const STATUSES = new Set(['FREE', 'USED', 'RESERVED', 'CONFLICT']);
+const BULK_ACTIONS = new Set(['release', 'reserve', 'update']);
+const MAX_BULK = 500;
 
 function inferStatus(input, current) {
   // If anything is filled in, default to USED unless explicitly set
@@ -144,5 +147,78 @@ export async function registerIps(app) {
       after,
     });
     return { ip: after, device };
+  });
+
+  // Bulk action sobre uma lista de IPs. Admin-gated.
+  // body: { ipIds: number[], action: 'release' | 'reserve' | 'update', data?: {function, notes, type} }
+  // Resposta: { action, requested, updated, failed: [{id, reason}] }
+  app.post('/api/ips/bulk', { preHandler: requireAdmin }, async (req, reply) => {
+    const body = req.body || {};
+    const ipIds = Array.isArray(body.ipIds) ? body.ipIds.map(Number).filter((n) => Number.isInteger(n)) : [];
+    const action = body.action;
+    if (!ipIds.length) {
+      reply.code(400);
+      return { error: 'ipIds vazio ou inválido' };
+    }
+    if (ipIds.length > MAX_BULK) {
+      reply.code(400);
+      return { error: `máximo ${MAX_BULK} IPs por chamada` };
+    }
+    if (!BULK_ACTIONS.has(action)) {
+      reply.code(400);
+      return { error: `action inválido: ${action}`, valid: Array.from(BULK_ACTIONS) };
+    }
+
+    const updated = [];
+    const failed = [];
+    for (const id of ipIds) {
+      try {
+        const before = await prisma.ipAddress.findUnique({ where: { id } });
+        if (!before) {
+          failed.push({ id, reason: 'not_found' });
+          continue;
+        }
+        let data;
+        let actionTag = action;
+        if (action === 'release') {
+          data = { type: null, hostname: null, function: null, notes: null, status: 'FREE', deviceId: null };
+        } else if (action === 'reserve') {
+          data = { status: 'RESERVED' };
+        } else {
+          // update — só campos seguros
+          const patch = {};
+          const src = body.data || {};
+          for (const k of ['type', 'function', 'notes']) {
+            if (k in src) patch[k] = src[k] === '' ? null : src[k];
+          }
+          if (Object.keys(patch).length === 0) {
+            failed.push({ id, reason: 'no_fields_to_update' });
+            continue;
+          }
+          // Status: se algum campo foi preenchido e o IP era FREE, vira USED
+          if ((patch.hostname || patch.type || patch.function) && before.status === 'FREE') {
+            patch.status = 'USED';
+          }
+          data = patch;
+        }
+        const after = await prisma.ipAddress.update({ where: { id }, data });
+        await auditFromReq(req, {
+          entity: 'ip',
+          entityId: id,
+          action: `bulk_${actionTag}`,
+          before,
+          after,
+        });
+        updated.push(id);
+      } catch (err) {
+        failed.push({ id, reason: err.message });
+      }
+    }
+    return {
+      action,
+      requested: ipIds.length,
+      updated: updated.length,
+      failed,
+    };
   });
 }
