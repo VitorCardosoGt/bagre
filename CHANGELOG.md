@@ -11,6 +11,12 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
 ### Adicionado
+- **Importação universal — fase 1** ([#13](https://github.com/fabgcruz/bagre/issues/13)) — novo endpoint `POST /api/import` admin-gated que aceita 3 formatos via upload (multipart) ou JSON body inline:
+  - **JSON** — formato seed nativo do Bagre (mesmo shape de `seed.json`)
+  - **CSV** — tabular com colunas `site_code, site_name, subnet_name, subnet_cidr, subnet_vlan, address, hostname, type, function, status, notes` (1 IP por linha; sites e subnets auto-agrupadas). Parser CSV inline minimalista (suporta aspas).
+  - **XLSX** — primeira aba tratada como CSV-like (mesmas colunas reconhecidas)
+  - Limite 25MB por upload. Função `importSeed(seed)` extraída do legacy `runImport` pra reuso.
+- YAML e NetBox export — não implementados nesta iteração (issue aberta pra continuar).
 - **Suporte IPv6 first-class — fase 1** ([#10](https://github.com/fabgcruz/2bagre/issues/10)) — schema já era agnóstico, agora os helpers de CIDR também. `apps/api/src/cidr.js` ganha `parseIpv6Cidr` (BigInt 128-bit), `detectIpVersion`, `normalizeAddress` (compactação canônica `::`). `expandCidr` retorna `[]` para IPv6 — subnets v6 são criadas sem pré-enumeração de IPs (um /64 tem 18.4 quintilhões de endereços; enumerar não escala).
 - **`POST /api/subnets/:id/ips`** — novo endpoint para criar IPs ad-hoc em uma subnet. Único caminho viável para alocar endereços IPv6, mas também serve pra IPv4 quando o operador precisa adicionar um IP fora do range pré-criado (ex: IPs secundários em interfaces multi-tap).
 - **`GET /api/cidr/parse`** suporta IPv6 — retorna network, last address e total ("2^N"). Operações split/merge/next-free ainda são IPv4-only (próxima iteração).

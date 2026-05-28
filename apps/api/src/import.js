@@ -58,6 +58,14 @@ export async function runImport(path = '/app/seed.json', { ifEmpty = false } = {
   }
   const raw = await readFile(path, 'utf8');
   const seed = JSON.parse(raw);
+  return importSeed(seed);
+}
+
+/**
+ * Importa diretamente um objeto seed já parseado (usado pelo endpoint
+ * POST /api/import quando o operador envia JSON/CSV/XLSX via upload).
+ */
+export async function importSeed(seed) {
   const stats = {
     sites: 0,
     subnets: 0,
