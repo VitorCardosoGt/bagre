@@ -21,9 +21,9 @@ model Site {
 }
 
 model Subnet {
-  id              Int           @id @default(autoincrement())
+  id              Int                         @id @default(autoincrement())
   siteId          Int
-  site            Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site            Site                        @relation(fields: [siteId], references: [id], onDelete: Cascade)
   name            String
   cidr            String? // primary CIDR; may be null when source has no mask
   cidrLabel       String? // raw range label from spreadsheet
@@ -32,16 +32,33 @@ model Subnet {
   // Cloud sync tracking (optional)
   source          String? // "manual" | "import" | "cloud:aws" | "cloud:azure" | "cloud:gcp"
   cloudAccountId  Int?
-  cloudAccount    CloudAccount? @relation(fields: [cloudAccountId], references: [id], onDelete: SetNull)
+  cloudAccount    CloudAccount?               @relation(fields: [cloudAccountId], references: [id], onDelete: SetNull)
   cloudResourceId String? // ex: subnet-0a1b2c (AWS), /subscriptions/.../subnets/foo (Azure)
   cloudMetadata   Json? // arbitrary provider-specific extras (account_id, region, tags, etc)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
   ips             IpAddress[]
+  snapshots       SubnetUtilizationSnapshot[]
 
   @@unique([siteId, name])
   @@index([cloudAccountId])
   @@index([cloudResourceId])
+}
+
+// Snapshot periódico do uso de cada subnet — base do histórico temporal
+// exibido na página de detalhes da subnet. Capturado pelo scheduler a
+// cada SNAPSHOT_INTERVAL_MINUTES (default 60).
+model SubnetUtilizationSnapshot {
+  id            Int      @id @default(autoincrement())
+  subnetId      Int
+  subnet        Subnet   @relation(fields: [subnetId], references: [id], onDelete: Cascade)
+  takenAt       DateTime @default(now())
+  ipCount       Int
+  usedCount     Int
+  reservedCount Int
+  freeCount     Int
+
+  @@index([subnetId, takenAt])
 }
 
 enum IpStatus {

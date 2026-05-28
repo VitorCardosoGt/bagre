@@ -10,6 +10,12 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+### Adicionado
+- **Histórico temporal de utilização de subnet** ([#11](https://github.com/fabgcruz/bagre/issues/11)) — gráfico SVG inline na página de detalhes da subnet mostrando IPs em uso ao longo do tempo (7d / 30d / 90d). Indicador de tendência (subindo / estável / descendo), linha tracejada da capacidade total como referência, tooltip em cada ponto. Botão "Capturar agora" pra forçar snapshot fora do ciclo do scheduler.
+- Schema novo: `SubnetUtilizationSnapshot` (subnetId, takenAt, ipCount, usedCount, reservedCount, freeCount) com índice em (subnetId, takenAt).
+- Scheduler periódico em `apps/api/src/integrations/utilization-snapshot.js` — roda a cada `SNAPSHOT_INTERVAL_MINUTES` (default 60), pula subnets com snapshot recente e subnets sem IPs.
+- Endpoints: `GET /api/subnets/:id/utilization-history?days=N` (max 365d) e `POST /api/subnets/:id/utilization-snapshot` (admin pode forçar manual).
+
 ---
 
 ## [0.3.1] — 2026-05-27

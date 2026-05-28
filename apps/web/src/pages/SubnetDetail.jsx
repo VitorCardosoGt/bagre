@@ -22,6 +22,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import AllocateIpModal from '../components/AllocateIpModal.jsx';
 import Modal from '../components/Modal.jsx';
 import { useToast } from '../components/Toast.jsx';
+import UtilizationChart from '../components/UtilizationChart.jsx';
 
 function EditableCell({ value, onSave, placeholder = '—', disabled }) {
   const [editing, setEditing] = useState(false);
@@ -277,6 +278,8 @@ export default function SubnetDetail() {
           </div>
         </div>
       </div>
+
+      <UtilizationChart subnetId={subnetId} ipCount={subnet?.ipCount ?? 0} />
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 mb-3">

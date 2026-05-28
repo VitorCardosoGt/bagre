@@ -1,6 +1,7 @@
 import { prisma } from '../db.js';
 import { expandCidr } from '../cidr.js';
 import { auditFromReq } from '../audit.js';
+import { snapshotSubnet } from '../integrations/utilization-snapshot.js';
 
 export async function registerSubnets(app) {
   app.get('/api/subnets/:id', async (req) => {
@@ -28,6 +29,38 @@ export async function registerSubnets(app) {
       return { error: 'nenhum IP livre nesta subnet' };
     }
     return next;
+  });
+
+  app.get('/api/subnets/:id/utilization-history', async (req) => {
+    const id = Number(req.params.id);
+    const days = Math.min(Math.max(Number(req.query.days) || 30, 1), 365);
+    const since = new Date(Date.now() - days * 24 * 60 * 60_000);
+    const rows = await prisma.subnetUtilizationSnapshot.findMany({
+      where: { subnetId: id, takenAt: { gte: since } },
+      orderBy: { takenAt: 'asc' },
+      select: {
+        id: true,
+        takenAt: true,
+        ipCount: true,
+        usedCount: true,
+        reservedCount: true,
+        freeCount: true,
+      },
+    });
+    return {
+      subnetId: id,
+      sinceDays: days,
+      count: rows.length,
+      snapshots: rows,
+    };
+  });
+
+  // Captura snapshot agora (sem esperar o scheduler) — útil pra UI mostrar
+  // dado fresco depois de uma operação em lote.
+  app.post('/api/subnets/:id/utilization-snapshot', async (req) => {
+    const id = Number(req.params.id);
+    const r = await snapshotSubnet(id);
+    return r;
   });
 
   app.get('/api/subnets/:id/ips', async (req) => {

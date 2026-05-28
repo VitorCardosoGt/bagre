@@ -196,6 +196,12 @@ export const api = {
   ipsBulk: (payload) =>
     request('/ips/bulk', { method: 'POST', body: JSON.stringify(payload) }),
 
+  // Subnet utilization history
+  subnetHistory: (id, days = 30) =>
+    request(`/subnets/${id}/utilization-history?days=${days}`),
+  snapshotSubnet: (id) =>
+    request(`/subnets/${id}/utilization-snapshot`, { method: 'POST' }),
+
   cidrParse: (cidr) => request(`/cidr/parse?cidr=${encodeURIComponent(cidr)}`),
   cidrSplit: (cidr, prefix) =>
     request('/cidr/split', { method: 'POST', body: JSON.stringify({ cidr, prefix }) }),

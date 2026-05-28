@@ -30,6 +30,7 @@ import { registerCloudAccountRoutes } from './routes/cloud-accounts.js';
 import { registerCloudFinOpsRoutes } from './routes/cloud-finops.js';
 import { startScheduler as startZabbixScheduler } from './integrations/zabbix.js';
 import { startScheduler as startPrometheusScheduler } from './integrations/prometheus.js';
+import { startScheduler as startSnapshotScheduler } from './integrations/utilization-snapshot.js';
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -142,6 +143,7 @@ async function build() {
   // Background scheduler (non-blocking)
   startZabbixScheduler(app.log).catch((e) => app.log.warn(e, 'zabbix scheduler init failed'));
   startPrometheusScheduler(app.log).catch((e) => app.log.warn(e, 'prometheus scheduler init failed'));
+  startSnapshotScheduler(app.log).catch((e) => app.log.warn(e, 'utilization snapshot scheduler init failed'));
 
   await registerStats(app);
   await registerSites(app);
