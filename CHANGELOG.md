@@ -10,10 +10,28 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+---
+
+## [0.4.0] — 2026-05-28
+
+**Tema:** Multi-cloud completo — AWS + Azure + GCP.
+
+Marco do roadmap. Bagre agora é **single pane of glass** para IPs em qualquer combinação de AWS, Azure e GCP, com detecção automática de IPs públicos ociosos em todos os três (relatório FinOps unificado em USD/mês).
+
 ### Adicionado
-- **Cloud sync GCP** ([#21](https://github.com/fabgcruz/bagre/issues/21)) — terceiro provider cloud implementado, fechando o multi-cloud (AWS + Azure + GCP). Auth via Service Account JSON key com JWT RS256 manual (sem `@google-cloud/*` SDK). Sincroniza subnetworks via `aggregated/subnetworks`, NICs de instâncias (private IPs + ephemeral public via `accessConfigs.natIP`), e endereços reservados (static, INTERNAL + EXTERNAL — esses últimos com `users:[]` viram o FinOps gold equivalente a Elastic IPs unassociated). UI ganha campo de Service Account JSON com textarea, instruções inline e link pra doc do GCP IAM.
-- **Cloud sync Azure** ([#20](https://github.com/fabgcruz/bagre/issues/20)) — segundo provider cloud implementado, completa a promessa de multi-cloud feita na v0.2.0. Auth via Service Principal (App Registration + client secret + tenant ID + subscription ID), REST puro contra `management.azure.com` (sem SDK pesado). Sincroniza VNets/subnets, Network Interfaces (private IPs) e Public IPs (incluindo unassociated — gold do FinOps). FinOps report e Catálogos dinâmicos passam a incluir Azure automaticamente. Picker do provider na UI agora habilita Azure (saiu do "em breve").
-- Sync engine passa `account.scope` como 3º argumento para `listSubnets`/`listIps`. AWS ignora; Azure usa pra montar o path `/subscriptions/{id}/providers/...`.
+- **Cloud sync Azure** ([#20](https://github.com/fabgcruz/bagre/issues/20)) — provider implementado via REST puro contra `management.azure.com`, sem `@azure/*` SDK. Auth Service Principal (App Registration + client secret + tenant ID), token OAuth2 client_credentials cacheado em memória. Sincroniza VNets/subnets, Network Interfaces (private IPs) e Public IPs (incluindo unassociated — base do FinOps no Azure).
+- **Cloud sync GCP** ([#21](https://github.com/fabgcruz/bagre/issues/21)) — provider implementado via REST puro contra `compute.googleapis.com`, sem `@google-cloud/*` SDK. Auth Service Account JSON key com **JWT RS256 manual** (Node crypto.createSign), depois OAuth2 JWT bearer (RFC 7523). Sincroniza subnetworks (aggregated/all-regions), NICs de instâncias com private + ephemeral public IPs, e endereços reservados (static EXTERNAL com `users:[]` = FinOps gold).
+- Sync engine passa `account.scope` como 3º argumento de `listSubnets`/`listIps`. Azure/GCP usam (subscription / project_id); AWS ignora. Azure/GCP itera 1 vez (aggregated endpoints cobrem todas regions); AWS itera as regions configuradas.
+- UI: picker de provider habilita Azure e GCP (saem do "em breve"). Modal de adicionar conta tem campos contextuais por provider — AWS (Access Key OR Assume Role), Azure (Tenant + Client + Secret) e GCP (Service Account JSON em textarea, ~8 linhas).
+- PROVIDER_INFO de Azure e GCP ganhou texto inline da role/policy mínima e link pra doc oficial do IAM de cada provider.
+
+### Notas operacionais
+- Credenciais cloud continuam criptografadas AES-256-GCM no DB (CLOUD_CREDS_KEY obrigatória).
+- Custo estimado/h por provider (em `cloud-finops.js`): AWS 0.005, Azure 0.005, GCP 0.010 — valores de referência; operador deve confirmar com billing real.
+- O endpoint FinOps `/api/cloud/finops/idle-public-ips` continua provider-agnostic: filtra por `ipKind=PUBLIC` + `source startsWith 'cloud:'` + `cloudMetadata.associated === false`. Azure (`ipConfiguration === null`) e GCP (`users:[]`) populam essa flag automaticamente.
+
+### Sem breaking changes
+Schema, env vars, endpoints REST e UI da v0.3.x continuam funcionando idênticos. Upgrade é só `git pull && docker compose build api web && docker compose up -d`.
 
 ---
 
@@ -145,7 +163,8 @@ Versão inicial publicada após o fork pra opensource.
 - Wiki integrada opcional via DokuWiki.
 - ROADMAP público com 4 fases até a 1.0.0.
 
-[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/fabgcruz/bagre/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.4.0
 [0.3.2]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.2
 [0.3.1]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.1
 [0.3.0]: https://github.com/fabgcruz/bagre/releases/tag/v0.3.0
