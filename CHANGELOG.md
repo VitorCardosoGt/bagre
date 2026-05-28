@@ -11,6 +11,7 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
 ### Adicionado
+- **Design specs para Terraform Provider** ([#15](https://github.com/fabgcruz/bagre/issues/15)) e **Kubernetes Operator** ([#16](https://github.com/fabgcruz/bagre/issues/16)) em `docs/terraform-provider-design.md` e `docs/kubernetes-operator-design.md`. As implementações vivem em repositórios separados (Go) — esses documentos definem schema dos resources/CRDs, fluxo de auth, integração nativa (annotation do Service pro K8s) e roadmap. Quem quiser implementar tem rascunho pronto pra discussão antes de codar.
 - **Importação universal — fase 1** ([#13](https://github.com/fabgcruz/bagre/issues/13)) — novo endpoint `POST /api/import` admin-gated que aceita 3 formatos via upload (multipart) ou JSON body inline:
   - **JSON** — formato seed nativo do Bagre (mesmo shape de `seed.json`)
   - **CSV** — tabular com colunas `site_code, site_name, subnet_name, subnet_cidr, subnet_vlan, address, hostname, type, function, status, notes` (1 IP por linha; sites e subnets auto-agrupadas). Parser CSV inline minimalista (suporta aspas).
