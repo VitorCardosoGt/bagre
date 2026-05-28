@@ -71,12 +71,19 @@ Abra http://localhost:3000 e faça login com o e-mail/senha definidos no `.env`.
 
 ## Linha do tempo e evolução
 
-- **[CHANGELOG.md](CHANGELOG.md)** — todas as mudanças, versão por versão (features adicionadas, removidas, renomeadas, bugs corrigidos)
-- **[Releases](https://github.com/fabgcruz/bagre/releases)** — versões publicadas com notas, downloads e tags
+| Versão | Data | Highlights |
+|---|---|---|
+| **[v0.4.0](https://github.com/fabgcruz/bagre/releases/tag/v0.4.0)** | 2026-05-28 | **Multi-cloud completo** — Azure ([#20](https://github.com/fabgcruz/bagre/issues/20)) e GCP ([#21](https://github.com/fabgcruz/bagre/issues/21)) implementados. FinOps idle-public-IPs report unificado entre AWS + Azure + GCP. Service Principal (Azure) e Service Account JSON (GCP) via REST puro, sem SDKs pesados. |
+| **[v0.3.2](https://github.com/fabgcruz/bagre/releases/tag/v0.3.2)** | 2026-05-27 | **Histórico de capacidade** ([#11](https://github.com/fabgcruz/bagre/issues/11)) — gráfico SVG inline com IPs em uso ao longo do tempo (7d/30d/90d), indicador de tendência, linha de capacidade total. Scheduler de snapshot a cada 60min. |
+| **[v0.3.1](https://github.com/fabgcruz/bagre/releases/tag/v0.3.1)** | 2026-05-27 | **Calculadora CIDR avançada** ([#12](https://github.com/fabgcruz/bagre/issues/12)) com 4 tabs (Análise / Dividir / Próximas livres / Supernet) cruzando com IPAM em tempo real. **Bulk ops nos IPs** ([#14](https://github.com/fabgcruz/bagre/issues/14)) — checkboxes + barra de ação flutuante (Reservar / Liberar / Editar campos em massa). |
+| **[v0.3.0](https://github.com/fabgcruz/bagre/releases/tag/v0.3.0)** | 2026-05-27 | **Prometheus discovery** ([#25](https://github.com/fabgcruz/bagre/issues/25)) — sugestão da comunidade implementada em <24h. **Hardening de segurança** — JWT_SECRET fail-closed, sem mais `admin123` hardcoded, defaults inseguros do compose removidos. Sidebar reorganizada. Catálogos com abas dinâmicas por cloud account. CONTRIBUTING.md, SECURITY.md, issue templates. |
+| **[v0.2.0](https://github.com/fabgcruz/bagre/releases/tag/v0.2.0)** | 2026-05-27 | **Cloud sync AWS** ([#19](https://github.com/fabgcruz/bagre/issues/19)) — VPCs, ENIs, Elastic IPs via Access Key OR Assume Role. **FinOps idle public IPs** ([#22](https://github.com/fabgcruz/bagre/issues/22)). Refocus do escopo — feature Firewall Rules removida (fora de IPAM). Mascote do Bagre + branding limpo. Quickstart fixado (HTTP em :3000, seed.json opcional). |
+| **v0.1.0** | 2026-05-16 | **Initial release** — stack Docker Compose (Fastify + Prisma + PostgreSQL + React/Vite), catálogo de sites/subnets/IPs, alocação manual ou automática, importação XLSX/CSV, audit trail com diff antes/depois, SSO OIDC + RBAC, integração Zabbix nativa, endpoint /metrics Prometheus, wiki opcional via DokuWiki. |
+
+- **[CHANGELOG.md](CHANGELOG.md)** — detalhe completo de cada release (features, breaking changes, bugs, infra)
+- **[Releases](https://github.com/fabgcruz/bagre/releases)** — release notes formatadas no GitHub
 - **[ROADMAP.md](ROADMAP.md)** — visão, princípios, fases planejadas até a 1.0.0
 - **[Issues](https://github.com/fabgcruz/bagre/issues)** — backlog público, incluindo sugestões da comunidade
-
-Quem está testando: dá uma olhada no **CHANGELOG** pra acompanhar o que mudou em cada release. Quem quer ajudar a moldar o que vem: as **Issues** estão abertas, opinião informada é o melhor combustível pro projeto.
 
 ## Documentação
 
