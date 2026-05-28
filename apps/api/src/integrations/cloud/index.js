@@ -47,12 +47,12 @@
  */
 
 import * as aws from './aws.js';
-// import * as azure from './azure.js';  // TODO #20
+import * as azure from './azure.js';
 // import * as gcp from './gcp.js';      // TODO #21
 
 const providers = {
   AWS: aws,
-  // AZURE: azure,
+  AZURE: azure,
   // GCP: gcp,
 };
 

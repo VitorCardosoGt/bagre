@@ -42,7 +42,11 @@ export async function runSync(prisma, cloudAccountId) {
     const credentials = decryptCredentials(account.credentialsEnc);
     const provider = getProvider(account.provider);
     const sourceTag = `cloud:${provider.name}`;
-    const regions = account.regions?.length ? account.regions : ['us-east-1'];
+    // Azure: subscription cobre todas regions automaticamente. AWS/GCP: itera.
+    // Para Azure passamos uma única "region" dummy só pra reusar o loop.
+    const regions = account.provider === 'AZURE'
+      ? ['']
+      : (account.regions?.length ? account.regions : ['us-east-1']);
 
     // Ensure a per-account site exists (one per CloudAccount keeps subnets
     // from different accounts isolated even within the same provider).
@@ -87,8 +91,8 @@ export async function runSync(prisma, cloudAccountId) {
     const seenIpKeys = new Set(); // subnetCloudId|address
 
     for (const region of regions) {
-      // 1. Subnets
-      const subnets = await provider.listSubnets(credentials, region);
+      // 1. Subnets — passa scope como 3º arg (Azure usa, AWS/GCP ignoram)
+      const subnets = await provider.listSubnets(credentials, region, account.scope);
       summary.itemsRead += subnets.length;
 
       for (const ns of subnets) {
@@ -126,7 +130,7 @@ export async function runSync(prisma, cloudAccountId) {
       }
 
       // 2. IPs
-      const ips = await provider.listIps(credentials, region);
+      const ips = await provider.listIps(credentials, region, account.scope);
       summary.itemsRead += ips.length;
 
       for (const nip of ips) {

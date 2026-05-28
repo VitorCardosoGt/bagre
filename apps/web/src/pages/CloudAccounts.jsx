@@ -51,8 +51,16 @@ const PROVIDER_INFO = {
     scopeLabel: 'Subscription ID',
     scopePlaceholder: '00000000-0000-0000-0000-000000000000',
     defaultRegions: [],
-    regionsHint: 'eastus, brazilsouth, … (Azure ignora — usa locations do scope)',
-    policy: '',
+    regionsHint: 'Não usado — Azure descobre via subscription',
+    policy: `Crie um App Registration em Microsoft Entra ID,
+gere um client secret, e atribua a role "Reader"
+do escopo da subscription (ou uma custom role com
+exatamente estas 4 actions):
+
+  Microsoft.Network/virtualNetworks/read
+  Microsoft.Network/virtualNetworks/subnets/read
+  Microsoft.Network/networkInterfaces/read
+  Microsoft.Network/publicIPAddresses/read`,
   },
   GCP: {
     name: 'Google Cloud Platform',
@@ -344,10 +352,15 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
   const [displayName, setDisplayName] = useState('');
   const [scope, setScope] = useState('');
   const [regions, setRegions] = useState('us-east-1');
+  // AWS
   const [accessKeyId, setAccessKeyId] = useState('');
   const [secretAccessKey, setSecretAccessKey] = useState('');
   const [roleArn, setRoleArn] = useState('');
   const [externalId, setExternalId] = useState('');
+  // Azure
+  const [tenantId, setTenantId] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const info = PROVIDER_INFO[provider];
@@ -355,6 +368,15 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
   const isImplemented = implemented.includes(provider);
 
   function buildCredentials() {
+    if (provider === 'AZURE') {
+      return JSON.stringify({
+        mode: 'SERVICE_PRINCIPAL',
+        tenantId: tenantId.trim(),
+        clientId: clientId.trim(),
+        clientSecret: clientSecret.trim(),
+      });
+    }
+    // AWS
     if (authMode === 'ACCESS_KEY') {
       return JSON.stringify({ mode: 'ACCESS_KEY', accessKeyId: accessKeyId.trim(), secretAccessKey: secretAccessKey.trim() });
     }
@@ -368,7 +390,7 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
   async function submit(e) {
     e.preventDefault();
     if (!isImplemented) {
-      toast.error(`${provider} ainda não implementado. Use AWS por enquanto.`);
+      toast.error(`${provider} ainda não implementado.`);
       return;
     }
     setSubmitting(true);
@@ -377,7 +399,9 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
         provider,
         displayName: displayName.trim(),
         scope: scope.trim(),
-        regions: regions.split(',').map((r) => r.trim()).filter(Boolean),
+        regions: provider === 'AZURE'
+          ? []
+          : regions.split(',').map((r) => r.trim()).filter(Boolean),
         credentials: buildCredentials(),
       });
       toast.success(`Account "${account.displayName}" conectado!`);
@@ -386,6 +410,7 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
       // reset
       setDisplayName(''); setScope(''); setAccessKeyId(''); setSecretAccessKey('');
       setRoleArn(''); setExternalId('');
+      setTenantId(''); setClientId(''); setClientSecret('');
     } catch (err) {
       toast.error(`Falha: ${err.message}`);
     } finally {
@@ -421,17 +446,19 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
           </div>
         </div>
 
-        {provider === 'AWS' && (
+        {(provider === 'AWS' || provider === 'AZURE') && info.policy && (
           <div className="bg-slate-50 dark:bg-slate-800/40 rounded-lg p-3 text-xs">
             <div className="flex items-start gap-2">
               <ShieldCheck size={14} className="text-emerald-600 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <div className="font-medium mb-1">Policy mínima (read-only)</div>
-                <pre className="text-[11px] font-mono bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-x-auto">{info.policy}</pre>
+                <div className="font-medium mb-1">{provider === 'AWS' ? 'Policy mínima (read-only)' : 'Permissões mínimas (Reader role ou custom)'}</div>
+                <pre className="text-[11px] font-mono bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-x-auto whitespace-pre">{info.policy}</pre>
                 <div className="mt-1.5 flex items-center gap-2">
                   <CopyButton text={info.policy} />
                   <a
-                    href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html"
+                    href={provider === 'AWS'
+                      ? 'https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html'
+                      : 'https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal'}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-brand-600 hover:underline inline-flex items-center gap-0.5"
@@ -467,15 +494,17 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
           </div>
         </div>
 
-        <div>
-          <label className="text-xs font-medium text-slate-600 block mb-1">Regions (vírgula)</label>
-          <input
-            className="input w-full font-mono text-sm"
-            placeholder={info.regionsHint}
-            value={regions}
-            onChange={(e) => setRegions(e.target.value)}
-          />
-        </div>
+        {provider !== 'AZURE' && (
+          <div>
+            <label className="text-xs font-medium text-slate-600 block mb-1">Regions (vírgula)</label>
+            <input
+              className="input w-full font-mono text-sm"
+              placeholder={info.regionsHint}
+              value={regions}
+              onChange={(e) => setRegions(e.target.value)}
+            />
+          </div>
+        )}
 
         {provider === 'AWS' && (
           <div>
@@ -513,7 +542,7 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
           </div>
         )}
 
-        {authMode === 'ACCESS_KEY' && (
+        {provider === 'AWS' && authMode === 'ACCESS_KEY' && (
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-slate-600 block mb-1">Access Key ID</label>
@@ -539,7 +568,7 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
           </div>
         )}
 
-        {authMode === 'ASSUME_ROLE' && (
+        {provider === 'AWS' && authMode === 'ASSUME_ROLE' && (
           <div className="space-y-3">
             <div className="text-xs text-slate-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-2">
               ⚠ Bagre precisa ter credenciais base (env vars <code>AWS_ACCESS_KEY_ID</code>/<code>AWS_SECRET_ACCESS_KEY</code> ou EC2 instance role) para chamar STS:AssumeRole.
@@ -561,6 +590,45 @@ function AddAccountModal({ open, onClose, providers, onCreated }) {
                 placeholder="random-uuid"
                 value={externalId}
                 onChange={(e) => setExternalId(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {provider === 'AZURE' && (
+          <div className="space-y-3">
+            <div className="text-xs text-slate-500 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded p-2">
+              <strong>Service Principal:</strong> crie um App Registration em Microsoft Entra ID, gere um client secret, e atribua role <code>Reader</code> na subscription.
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Tenant ID</label>
+              <input
+                className="input w-full font-mono text-sm"
+                placeholder="00000000-0000-0000-0000-000000000000"
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Client ID (Application ID)</label>
+              <input
+                className="input w-full font-mono text-sm"
+                placeholder="00000000-0000-0000-0000-000000000000"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Client Secret</label>
+              <input
+                type="password"
+                className="input w-full font-mono text-sm"
+                placeholder="••••••••"
+                value={clientSecret}
+                onChange={(e) => setClientSecret(e.target.value)}
+                required
               />
             </div>
           </div>

@@ -10,6 +10,10 @@ Quem está testando o Bagre pode acompanhar aqui o que mudou em cada versão —
 
 Mudanças que estão em `main` e ainda não entraram em release oficial.
 
+### Adicionado
+- **Cloud sync Azure** ([#20](https://github.com/fabgcruz/bagre/issues/20)) — segundo provider cloud implementado, completa a promessa de multi-cloud feita na v0.2.0. Auth via Service Principal (App Registration + client secret + tenant ID + subscription ID), REST puro contra `management.azure.com` (sem SDK pesado). Sincroniza VNets/subnets, Network Interfaces (private IPs) e Public IPs (incluindo unassociated — gold do FinOps). FinOps report e Catálogos dinâmicos passam a incluir Azure automaticamente. Picker do provider na UI agora habilita Azure (saiu do "em breve").
+- Sync engine passa `account.scope` como 3º argumento para `listSubnets`/`listIps`. AWS ignora; Azure usa pra montar o path `/subscriptions/{id}/providers/...`.
+
 ---
 
 ## [0.3.2] — 2026-05-27
