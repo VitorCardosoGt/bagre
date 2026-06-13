@@ -1,0 +1,57 @@
+# Overlay de PRODUÇÃO na VPS (co-locado com outros serviços), focado em segurança.
+#
+# Sobe o app SEM expor portas publicamente: o `web` só escuta em 127.0.0.1,
+# e o nginx do host (vhost demo.bagre.dev) faz o proxy. Zabbix/api não publicam
+# nada — ficam só na rede interna do projeto. Não encosta em outros serviços do host.
+#
+# Uso (na VPS):
+#   docker compose \
+#     -f docker-compose.yml \
+#     -f docker-compose.zabbix-dev.yml \
+#     -f docker-compose.demo.yml \
+#     -f docker-compose.demo.vps.yml \
+#     up -d
+#
+# Requer Docker Compose v2.24+ (tags !override / !reset). Verifique com:
+#   docker compose version
+#
+# Backstop independente de versão (caso !override não funcione): bloqueie as
+# portas 3000/3001/8080/10051 na cadeia DOCKER-USER do iptables — ver
+# infra/demo/cloudflare-setup.md (seção Firewall).
+
+services:
+  # Único ponto de entrada do app — preso ao loopback. O nginx do host
+  # (127.0.0.1:8088) faz o proxy reverso e o TLS.
+  web:
+    ports: !override
+      - "127.0.0.1:8088:80"
+    security_opt:
+      - no-new-privileges:true
+
+  # API não precisa de porta no host — o nginx interno do `web` já faz proxy
+  # de /api e /metrics para api:3001 pela rede do projeto.
+  api:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # Postgres NUNCA público — o base publica 5433; aqui removemos.
+  db:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+
+  # Zabbix 100% interno — nunca publicado.
+  zabbix-web:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+  zabbix-server:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+  zabbix-db:
+    security_opt:
+      - no-new-privileges:true
