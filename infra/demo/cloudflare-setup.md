@@ -1,80 +1,79 @@
-# Cloudflare + firewall do demo.bagre.dev (tudo grátis)
+# Deploy seguro do demo.bagre.dev via Cloudflare Tunnel (tudo grátis)
 
-Camada de segurança de borda para a demo pública, sem custo extra (o `bagre.dev`
-já está no Cloudflare). Faça nesta ordem.
+A demo fica atrás do Cloudflare **sem abrir nenhuma porta** na VPS — o `cloudflared`
+faz uma conexão de saída. Zero conflito com outros serviços do host, zero
+certificado de origem, zero exposição. Faça nesta ordem.
 
-## 1. DNS com proxy (a peça que mais protege)
+## 0. (Recomendado) Swap na VPS — rede de segurança de memória
 
-Em **DNS → Records**:
-- Adicione `A` `demo` → IP da VPS.
-- **Proxy status = Proxied (nuvem laranja).** Isso esconde o IP da VPS, ativa DDoS/CDN e o WAF.
+A VPS tem ~4 GB livres e **nenhum swap**; a demo cabe, mas sem swap um pico pode
+acionar o OOM-killer. Há 72 GB de disco livres — sobra. Crie 4 GB de swap:
 
-## 2. TLS de origem (grátis, modo Full strict)
+```bash
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+sudo sysctl vm.swappiness=10
+echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf
+free -h   # confirmar
+```
 
-1. **SSL/TLS → Overview → Full (strict).**
-2. **SSL/TLS → Origin Server → Create Certificate** (padrão RSA, 15 anos). Inclua `demo.bagre.dev`.
-3. Na VPS, salve os dois arquivos (modo 600):
+## 1. Criar o Tunnel no Cloudflare (Zero Trust)
+
+1. Cloudflare → **Zero Trust** (gratuito) → **Networks → Tunnels → Create a tunnel**.
+2. Tipo **Cloudflared**, dê um nome (ex.: `bagre-demo`). Copie o **token** exibido.
+3. Na VPS, coloque o token no `.env` do projeto:
    ```
-   sudo mkdir -p /etc/nginx/ssl/demo.bagre.dev
-   sudo tee /etc/nginx/ssl/demo.bagre.dev/origin.pem   # cole o certificado
-   sudo tee /etc/nginx/ssl/demo.bagre.dev/origin.key   # cole a chave privada
-   sudo chmod 600 /etc/nginx/ssl/demo.bagre.dev/*
+   TUNNEL_TOKEN=eyJ... (o token completo)
    ```
-   (Os caminhos batem com `nginx-demo.bagre.dev.conf`.)
-4. **SSL/TLS → Edge Certificates → Always Use HTTPS: On**, **Min TLS 1.2**.
+4. Ainda no painel do tunnel, em **Public Hostnames → Add a public hostname**:
+   - **Subdomain:** `demo`  **Domain:** `bagre.dev`
+   - **Service:** `HTTP`  →  `demo-nginx:80`
+   (O Cloudflare cria sozinho o registro DNS de `demo.bagre.dev`, já proxied.)
 
-## 3. Proteções grátis (liga e esquece)
+Subir a stack (`docker compose ... -f docker-compose.demo.vps.yml up -d`) liga o túnel.
 
-- **Security → Bots → Bot Fight Mode: On** (barra bots/scanners automáticos).
+## 2. Proteções de borda grátis (liga e esquece)
+
+- **SSL/TLS → Overview → Full (strict)** (o túnel já é cifrado).
+- **Security → Bots → Bot Fight Mode: On.**
 - **Security → WAF → Managed rules:** ative o **Cloudflare Free Managed Ruleset**.
-- **Security → Settings → Security Level: Medium/High.**
-- **Speed → Optimization → Brotli: On.**
+- **Security → Settings → Security Level: Medium/High** e **Always Use HTTPS: On**.
 
-## 4. Regra de rate limiting grátis (1 incluída no plano Free)
+## 3. Regra de rate limiting grátis (1 incluída no plano Free)
 
 **Security → WAF → Rate limiting rules → Create**:
 - **If** URI Path equals `/api/auth/login`
-- **Then** when exceeds **10 requests / 1 min** per IP → **Block** (ou Managed Challenge), por 10 min.
+- **Then** ao exceder **10 requisições / 1 min** por IP → **Block** (10 min).
 
-Gaste a regra grátis no login (alvo de brute force). O nginx e o app já cobrem o resto em profundidade.
+Gaste a regra grátis no login (alvo de brute force); nginx e app cobrem o resto.
 
-## 5. Travar acesso direto à origem (só o Cloudflare entra)
+## 4. Firewall do host (higiene — a demo não expõe nada)
 
-Sem isso, alguém que descubra o IP da VPS pula o Cloudflare. Duas opções (grátis):
+Como nada da demo é publicado, não há porta nova a proteger. Mantenha o UFW só
+com o essencial (sem mexer no que os outros serviços já usam):
 
-- **Recomendado — Authenticated Origin Pulls (mTLS):** SSL/TLS → Origin Server → **Authenticated Origin Pulls: On**. Instale o cert cliente da Cloudflare no nginx e exija com `ssl_verify_client on;` / `ssl_client_certificate`. Aí o nginx só aceita conexões assinadas pelo Cloudflare.
-- **Simples — bloqueio por header:** descomente em `nginx-demo.bagre.dev.conf` a linha
-  `if ($http_cf_connecting_ip = "") { return 403; }` (recusa quem não vem do Cloudflare).
-
-## 6. Firewall da VPS (defesa do host)
-
-Como o `docker-compose.demo.vps.yml` prende as portas em `127.0.0.1`, elas já não
-ficam públicas. Mesmo assim, deixe o UFW só com o essencial:
-
-```
+```bash
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw enable
+sudo ufw --force enable
 ```
 
-⚠️ **Cuidado com o Docker x UFW:** portas publicadas pelo Docker em `0.0.0.0`
-**furam o UFW** (vão direto na cadeia DOCKER). Por isso prendemos em `127.0.0.1`.
-Se por algum motivo alguma porta da demo ficar publicada em `0.0.0.0`, bloqueie na
-cadeia DOCKER-USER (que o UFW não cobre):
-
-```
-sudo iptables -I DOCKER-USER -p tcp -m multiport --dports 3000,3001,8080,10051 ! -s 127.0.0.1 -j DROP
-```
+⚠️ Lembrete: portas publicadas por containers em `0.0.0.0` furam o UFW (vão na
+cadeia DOCKER). A demo evita isso por completo — não publica nenhuma porta.
 
 ## Resumo das camadas (todas R$0)
 
 | Camada | Onde | Protege |
 |---|---|---|
-| Proxy + DDoS + esconde IP | Cloudflare (laranja) | volume/origem |
-| WAF + Bot Fight | Cloudflare | exploits/bots |
+| Tunnel (sem porta aberta) | cloudflared | exposição / conflito de porta |
+| Proxy + DDoS + esconde IP | Cloudflare (laranja) | volume / origem |
+| WAF + Bot Fight | Cloudflare | exploits / bots |
 | Rate limit no login | Cloudflare + nginx + app | brute force |
-| TLS Full strict + AOP | Cloudflare + nginx | sniffing / bypass de origem |
-| Portas em localhost + UFW + DOCKER-USER | VPS | exposição / outros serviços |
-| Headers + tamanho/timeout | nginx | abuso de request |
+| nginx interno (headers, limites) | demo-nginx | abuso de request |
+| Isolamento de containers | docker-compose.demo.vps.yml | blast-radius / host |
 | DEMO_MODE (anti-SSRF) + reset diário | app | pivô / persistência |
+| Swap | VPS | estabilidade sob pico |

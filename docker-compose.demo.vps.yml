@@ -1,8 +1,9 @@
 # Overlay de PRODUÇÃO na VPS (co-locado com outros serviços), focado em segurança.
 #
-# Sobe o app SEM expor portas publicamente: o `web` só escuta em 127.0.0.1,
-# e o nginx do host (vhost demo.bagre.dev) faz o proxy. Zabbix/api não publicam
-# nada — ficam só na rede interna do projeto. Não encosta em outros serviços do host.
+# A demo NÃO abre nenhuma porta no host: usa Cloudflare Tunnel (cloudflared),
+# que faz uma conexão de SAÍDA para o Cloudflare. O Cloudflare (laranja) entrega
+# demo.bagre.dev com TLS/DDoS/WAF e encaminha pelo túnel até o nginx interno da
+# demo. Resultado: zero conflito de porta, zero exposição, nada do host é tocado.
 #
 # Uso (na VPS):
 #   docker compose \
@@ -12,24 +13,45 @@
 #     -f docker-compose.demo.vps.yml \
 #     up -d
 #
-# Requer Docker Compose v2.24+ (tags !override / !reset). Verifique com:
-#   docker compose version
-#
-# Backstop independente de versão (caso !override não funcione): bloqueie as
-# portas 3000/3001/8080/10051 na cadeia DOCKER-USER do iptables — ver
-# infra/demo/cloudflare-setup.md (seção Firewall).
+# Requer: Docker Compose v2.24+ (tags !override / !reset) e a env TUNNEL_TOKEN
+# (criada no Cloudflare Zero Trust → Networks → Tunnels). Ver infra/demo/cloudflare-setup.md.
 
 services:
-  # Único ponto de entrada do app — preso ao loopback. O nginx do host
-  # (127.0.0.1:8088) faz o proxy reverso e o TLS.
-  web:
-    ports: !override
-      - "127.0.0.1:8088:80"
+  # Túnel de saída para o Cloudflare — não publica nada no host.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bagre-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - demo-nginx
+    mem_limit: 64m
     security_opt:
       - no-new-privileges:true
 
-  # API não precisa de porta no host — o nginx interno do `web` já faz proxy
-  # de /api e /metrics para api:3001 pela rede do projeto.
+  # nginx interno da demo — camada de rate-limit + headers. HTTP simples (o TLS
+  # é do Cloudflare/túnel). Não publica porta: só o cloudflared o alcança.
+  demo-nginx:
+    image: nginx:alpine
+    container_name: bagre-demo-nginx
+    restart: unless-stopped
+    depends_on:
+      - web
+    volumes:
+      - ./infra/demo/nginx-demo.bagre.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    mem_limit: 64m
+    security_opt:
+      - no-new-privileges:true
+
+  # App web (SPA + proxy interno de /api) — interno, sem porta no host.
+  web:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+
+  # API interna — o nginx do `web` já proxia /api e /metrics para api:3001.
   api:
     ports: !reset null
     security_opt:
