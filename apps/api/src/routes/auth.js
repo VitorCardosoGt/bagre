@@ -1,11 +1,18 @@
 import { prisma } from '../db.js';
 import { hashPassword, verifyPassword, newToken, requireAuth } from '../auth.js';
 import { audit } from '../audit.js';
+import { rateLimit } from '../rate-limit.js';
 
 const TOKEN_TTL_MIN = 60 * 60 * 8; // 8h
 
+// Proteção contra brute force nos endpoints de auth (por IP, janela de 5min).
+// Thresholds generosos pra não atrapalhar uso legítimo nem o login 1-clique da demo.
+const loginLimit = rateLimit({ name: 'login', windowMs: 5 * 60_000, max: 50 });
+const signupLimit = rateLimit({ name: 'signup', windowMs: 5 * 60_000, max: 20 });
+const resetLimit = rateLimit({ name: 'reset', windowMs: 5 * 60_000, max: 20 });
+
 export async function registerAuth(app) {
-  app.post('/api/auth/login', async (req, reply) => {
+  app.post('/api/auth/login', { preHandler: loginLimit }, async (req, reply) => {
     const { email, password } = req.body || {};
     if (!email || !password) {
       reply.code(400);
@@ -47,7 +54,7 @@ export async function registerAuth(app) {
     };
   });
 
-  app.post('/api/auth/signup', async (req, reply) => {
+  app.post('/api/auth/signup', { preHandler: signupLimit }, async (req, reply) => {
     if (process.env.SIGNUP_ENABLED === 'false') {
       reply.code(403);
       return { error: 'cadastro de novas contas está desativado' };
@@ -146,7 +153,7 @@ export async function registerAuth(app) {
   // Self-service reset request: generates a token if user exists. Always
   // returns 200 to avoid user enumeration. The token is logged on the server
   // so the admin can hand it out (no email integration in this MVP).
-  app.post('/api/auth/reset-request', async (req, reply) => {
+  app.post('/api/auth/reset-request', { preHandler: resetLimit }, async (req, reply) => {
     const { email } = req.body || {};
     if (!email) {
       reply.code(400);

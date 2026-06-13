@@ -12,6 +12,21 @@ Mudanças que estão em `main` e ainda não entraram em release oficial.
 
 ---
 
+## [1.0.0] — 2026-06-17
+
+**Tema:** Marco 1.0 — pronto para produção, com site oficial e demo público ao vivo.
+
+A v1.0 consolida o conjunto já maduro do Bagre (IPAM central, IPv6 first-class, cloud sync multi-provider, FinOps, descoberta via Zabbix/Prometheus, DNS sync, validation engine, calculadora CIDR, bulk ops, histórico de capacidade, RBAC e SSO) como release estável de produção. O foco do ciclo foi estabilidade, demonstrabilidade e polimento — sem novas features de IPAM.
+
+### Adicionado
+- **Ambiente de demonstração (`DEMO_MODE`)** — instância pública compartilhada com login em 1 clique (perfis Admin e Leitor), banner de demonstração e dados reiniciados diariamente às 04h (BRT). Demonstra a **descoberta de hosts via Zabbix** end-to-end (host → pending discovery → aprovação em 1 clique), com alvo de integração fixado na instância interna (proteção anti-SSRF) e sincronização inicial automática.
+- **Site oficial** em [bagre.dev](https://bagre.dev).
+
+### Segurança / hardening
+- Revisão geral de marca e limpeza de referências legadas em código, docs, seeds e branding.
+
+---
+
 ## [0.5.0] — 2026-05-28
 
 **Tema:** Cleanup completo do backlog + integrações maduras com UI.
@@ -176,7 +191,7 @@ Primeira entrega significativa pós-lançamento. O Bagre passa a conectar contas
 - `docker compose up -d` agora funciona em clone fresh (antes nginx crash-loopava sem certs TLS, e a API explodia tentando ler `seed.json` inexistente como diretório).
 - README ajustado pra URL real do repo (não `SEU-USUARIO`).
 - Renomeado `CLAUDE.md` → `AGENTS.md` (convenção neutra; remove qualquer referência a ferramenta específica).
-- Removidas todas as referências a "Duosystem" (legacy do fork de origem) em código, docs, seeds, branding e mensagens de commit. Histórico reescrito pra zerar traços.
+- Revisão geral de marca: limpeza de referências legadas em código, docs, seeds, branding e mensagens de commit.
 
 ---
 
