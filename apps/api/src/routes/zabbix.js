@@ -7,6 +7,7 @@ import {
   syncFromZabbix,
   invalidateSession,
 } from '../integrations/zabbix.js';
+import { stripDemoPinned } from '../demo-guard.js';
 
 const SAFE_FIELDS = [
   'enabled',
@@ -52,6 +53,9 @@ export async function registerZabbixRoutes(app) {
     if (data.password && String(data.password).startsWith('••••')) delete data.password;
     if ('apiToken' in data && data.apiToken === '') data.apiToken = null;
     if ('password' in data && data.password === '') data.password = null;
+    // Na demo, o alvo do Zabbix fica fixado (anti-SSRF): o visitante pode
+    // alternar enabled/intervalo, mas não repointar url/credenciais.
+    stripDemoPinned(data, ['url', 'username', 'password', 'apiToken']);
     const before = await getConfig();
     const after = await prisma.zabbixConfig.update({ where: { id: 1 }, data });
     invalidateSession();

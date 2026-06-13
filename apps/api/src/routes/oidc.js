@@ -4,6 +4,7 @@
 import { prisma } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { audit, auditFromReq } from '../audit.js';
+import { DEMO } from '../demo-guard.js';
 import {
   getConfig,
   isConfigured,
@@ -46,6 +47,28 @@ export async function registerOidcRoutes(app) {
           allowedDomains,
         },
       },
+      demo: DEMO
+        ? {
+            enabled: true,
+            banner:
+              'Ambiente de demonstração — os dados são reiniciados todo dia às 04h (BRT). Não insira dados reais.',
+            // Credenciais propositalmente públicas para login em 1 clique.
+            accounts: [
+              {
+                label: 'Entrar como Admin (demo)',
+                role: 'ADMIN',
+                email: process.env.DEMO_ADMIN_EMAIL || 'demo-admin@bagre.dev',
+                password: process.env.DEMO_ADMIN_PASSWORD || 'demo-admin',
+              },
+              {
+                label: 'Entrar como Leitor (demo)',
+                role: 'READER',
+                email: process.env.DEMO_READER_EMAIL || 'demo-reader@bagre.dev',
+                password: process.env.DEMO_READER_PASSWORD || 'demo-reader',
+              },
+            ],
+          }
+        : { enabled: false },
     };
   });
 

@@ -23,13 +23,13 @@ export default function Login() {
   const ssoEnabled = cfg?.auth?.oidc?.enabled;
   const ssoLabel = cfg?.auth?.oidc?.buttonLabel || 'Entrar com Microsoft';
   const signupEnabled = cfg?.auth?.signup?.enabled !== false;
+  const demo = cfg?.demo?.enabled ? cfg.demo : null;
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function doLogin(em, pw) {
     setLoading(true);
     setErr(null);
     try {
-      const user = await login(email, password);
+      const user = await login(em, pw);
       if (user.mustChangePwd) {
         navigate('/profile?force=1', { replace: true });
       } else {
@@ -40,6 +40,11 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    await doLogin(email, password);
   }
 
   return (
@@ -61,6 +66,31 @@ export default function Login() {
             <h1 className="text-xl font-semibold">Bem-vindo de volta</h1>
             <p className="text-sm text-slate-500">Entre com suas credenciais para continuar</p>
           </div>
+
+          {demo && (
+            <div className="space-y-2.5 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3.5">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Ambiente de demonstração — entre com 1 clique:
+              </p>
+              <div className="flex flex-col gap-2">
+                {demo.accounts?.map((acc) => (
+                  <button
+                    key={acc.role}
+                    type="button"
+                    onClick={() => doLogin(acc.email, acc.password)}
+                    disabled={loading}
+                    className="btn w-full justify-center py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-100 font-medium"
+                  >
+                    <LogIn size={15} />
+                    {acc.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                Os dados são reiniciados diariamente às 04h (BRT).
+              </p>
+            </div>
+          )}
 
           {err && (
             <div className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-300 px-3 py-2.5 rounded-lg border border-rose-200 dark:border-rose-800">
