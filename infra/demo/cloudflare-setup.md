@@ -1,13 +1,12 @@
-# Deploy seguro do demo.bagre.dev via Cloudflare Tunnel (tudo grátis)
+# Deploy seguro do demo.bagre.dev (Cloudflare + origem :8443) — tudo grátis
 
-A demo fica atrás do Cloudflare **sem abrir nenhuma porta** na VPS — o `cloudflared`
-faz uma conexão de saída. Zero conflito com outros serviços do host, zero
-certificado de origem, zero exposição. Faça nesta ordem.
+A demo roda isolada no próprio nginx em `:8443` (porta livre no host) e fica atrás
+do Cloudflare. Faça nesta ordem.
 
-## 0. (Recomendado) Swap na VPS — rede de segurança de memória
+## 0. Swap na VPS (rede de segurança de memória)
 
 A VPS tem ~4 GB livres e **nenhum swap**; a demo cabe, mas sem swap um pico pode
-acionar o OOM-killer. Há 72 GB de disco livres — sobra. Crie 4 GB de swap:
+acionar o OOM-killer. Há 72 GB de disco livres. Crie 4 GB de swap:
 
 ```bash
 sudo fallocate -l 4G /swapfile
@@ -20,59 +19,82 @@ echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf
 free -h   # confirmar
 ```
 
-## 1. Criar o Tunnel no Cloudflare (Zero Trust)
+## 1. DNS com proxy
 
-1. Cloudflare → **Zero Trust** (gratuito) → **Networks → Tunnels → Create a tunnel**.
-2. Tipo **Cloudflared**, dê um nome (ex.: `bagre-demo`). Copie o **token** exibido.
-3. Na VPS, coloque o token no `.env` do projeto:
+Em **DNS → Records**: `A` `demo` → `187.127.254.219`, **Proxy = Proxied (laranja)**.
+Esconde o IP, ativa DDoS/CDN/WAF.
+
+## 2. TLS de origem (Origin Certificate, grátis)
+
+1. **SSL/TLS → Overview → Full (strict).**
+2. **SSL/TLS → Origin Server → Create Certificate** (RSA, 15 anos), inclua `demo.bagre.dev`.
+3. Na VPS (caminhos batem com o compose):
    ```
-   TUNNEL_TOKEN=eyJ... (o token completo)
+   sudo mkdir -p /etc/ssl/bagre-demo
+   sudo tee /etc/ssl/bagre-demo/origin.pem   # cole o certificado
+   sudo tee /etc/ssl/bagre-demo/origin.key   # cole a chave privada
+   sudo chmod 600 /etc/ssl/bagre-demo/*
    ```
-4. Ainda no painel do tunnel, em **Public Hostnames → Add a public hostname**:
-   - **Subdomain:** `demo`  **Domain:** `bagre.dev`
-   - **Service:** `HTTP`  →  `demo-nginx:80`
-   (O Cloudflare cria sozinho o registro DNS de `demo.bagre.dev`, já proxied.)
 
-Subir a stack (`docker compose ... -f docker-compose.demo.vps.yml up -d`) liga o túnel.
+## 3. Origin Rule — conectar na origem em :8443 (essencial)
 
-## 2. Proteções de borda grátis (liga e esquece)
+No plano grátis o Cloudflare conecta na origem na mesma porta do visitante (443).
+Como a demo escuta em **8443**, crie uma regra de reescrita de porta:
 
-- **SSL/TLS → Overview → Full (strict)** (o túnel já é cifrado).
+**Rules → Origin Rules → Create rule**:
+- **If** Hostname equals `demo.bagre.dev`
+- **Then → Rewrite to → Destination Port = `8443`**
+
+Assim o visitante usa `https://demo.bagre.dev` normal e o Cloudflare fala com a
+origem em `187.127.254.219:8443`.
+
+## 4. Proteções de borda grátis
+
 - **Security → Bots → Bot Fight Mode: On.**
 - **Security → WAF → Managed rules:** ative o **Cloudflare Free Managed Ruleset**.
 - **Security → Settings → Security Level: Medium/High** e **Always Use HTTPS: On**.
 
-## 3. Regra de rate limiting grátis (1 incluída no plano Free)
+## 5. Regra de rate limiting grátis (1 incluída no plano Free)
 
 **Security → WAF → Rate limiting rules → Create**:
 - **If** URI Path equals `/api/auth/login`
-- **Then** ao exceder **10 requisições / 1 min** por IP → **Block** (10 min).
+- **Then** ao exceder **10 req / 1 min** por IP → **Block** (10 min).
 
-Gaste a regra grátis no login (alvo de brute force); nginx e app cobrem o resto.
+## 6. Travar a :8443 só para o Cloudflare (importante)
 
-## 4. Firewall do host (higiene — a demo não expõe nada)
-
-Como nada da demo é publicado, não há porta nova a proteger. Mantenha o UFW só
-com o essencial (sem mexer no que os outros serviços já usam):
+A `:8443` é publicada pelo Docker em `0.0.0.0` e **fura o UFW** (vai na cadeia
+DOCKER). Restrinja na cadeia DOCKER-USER para só faixas do Cloudflare alcançarem:
 
 ```bash
-sudo ufw allow 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw --force enable
+# bloqueia 8443 por padrão; depois libera as faixas do Cloudflare
+sudo iptables -I DOCKER-USER -p tcp --dport 8443 -j DROP
+for cidr in 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 \
+  141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 \
+  197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 \
+  104.24.0.0/14 172.64.0.0/13 131.0.72.0/22; do
+  sudo iptables -I DOCKER-USER -p tcp --dport 8443 -s "$cidr" -j ACCEPT
+done
+# persistir: sudo apt install iptables-persistent && sudo netfilter-persistent save
 ```
 
-⚠️ Lembrete: portas publicadas por containers em `0.0.0.0` furam o UFW (vão na
-cadeia DOCKER). A demo evita isso por completo — não publica nenhuma porta.
+Alternativa mais robusta: **Authenticated Origin Pulls** (SSL/TLS → Origin Server →
+Authenticated Origin Pulls) + `ssl_verify_client on` no nginx — só o Cloudflare,
+com cert cliente, fala com a origem. Ou descomente o `if ($http_cf_connecting_ip…)`
+no `nginx-demo.bagre.dev.conf`.
+
+UFW geral (higiene, sem mexer no que já roda):
+```bash
+sudo ufw allow 22/tcp && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw --force enable
+```
 
 ## Resumo das camadas (todas R$0)
 
 | Camada | Onde | Protege |
 |---|---|---|
-| Tunnel (sem porta aberta) | cloudflared | exposição / conflito de porta |
 | Proxy + DDoS + esconde IP | Cloudflare (laranja) | volume / origem |
 | WAF + Bot Fight | Cloudflare | exploits / bots |
 | Rate limit no login | Cloudflare + nginx + app | brute force |
+| TLS Full strict + AOP / IP allowlist | Cloudflare + nginx + DOCKER-USER | sniffing / bypass de origem |
 | nginx interno (headers, limites) | demo-nginx | abuso de request |
 | Isolamento de containers | docker-compose.demo.vps.yml | blast-radius / host |
 | DEMO_MODE (anti-SSRF) + reset diário | app | pivô / persistência |

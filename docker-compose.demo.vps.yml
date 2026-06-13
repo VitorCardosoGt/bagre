@@ -1,9 +1,9 @@
 # Overlay de PRODUÇÃO na VPS (co-locado com outros serviços), focado em segurança.
 #
-# A demo NÃO abre nenhuma porta no host: usa Cloudflare Tunnel (cloudflared),
-# que faz uma conexão de SAÍDA para o Cloudflare. O Cloudflare (laranja) entrega
-# demo.bagre.dev com TLS/DDoS/WAF e encaminha pelo túnel até o nginx interno da
-# demo. Resultado: zero conflito de porta, zero exposição, nada do host é tocado.
+# A demo é autocontida e isolada: sobe seu PRÓPRIO nginx (demo-nginx) escutando
+# em 0.0.0.0:8443 — porta livre no host (o :80/:443 continuam de quem já os usa).
+# O Cloudflare (laranja, Full strict) entrega demo.bagre.dev e conecta na origem
+# em :8443 (via Origin Rule). Nenhum outro serviço do host é tocado.
 #
 # Uso (na VPS):
 #   docker compose \
@@ -13,34 +13,23 @@
 #     -f docker-compose.demo.vps.yml \
 #     up -d
 #
-# Requer: Docker Compose v2.24+ (tags !override / !reset) e a env TUNNEL_TOKEN
-# (criada no Cloudflare Zero Trust → Networks → Tunnels). Ver infra/demo/cloudflare-setup.md.
+# Requer Docker Compose v2.24+ (tags !override / !reset). Ver infra/demo/cloudflare-setup.md.
 
 services:
-  # Túnel de saída para o Cloudflare — não publica nada no host.
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: bagre-cloudflared
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
-    depends_on:
-      - demo-nginx
-    mem_limit: 64m
-    security_opt:
-      - no-new-privileges:true
-
-  # nginx interno da demo — camada de rate-limit + headers. HTTP simples (o TLS
-  # é do Cloudflare/túnel). Não publica porta: só o cloudflared o alcança.
+  # nginx próprio da demo — único ponto exposto (8443). TLS de origem (Cloudflare
+  # Origin Cert), rate-limit e security headers; proxia para o `web` interno.
   demo-nginx:
     image: nginx:alpine
     container_name: bagre-demo-nginx
     restart: unless-stopped
     depends_on:
       - web
+    ports:
+      - "8443:8443"
     volumes:
       - ./infra/demo/nginx-demo.bagre.dev.conf:/etc/nginx/conf.d/default.conf:ro
+      # Coloque origin.pem / origin.key (Cloudflare Origin Cert) neste diretório do host:
+      - /etc/ssl/bagre-demo:/etc/nginx/ssl:ro
     mem_limit: 64m
     security_opt:
       - no-new-privileges:true
