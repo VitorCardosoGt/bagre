@@ -21,7 +21,7 @@ free -h   # confirmar
 
 ## 1. DNS com proxy
 
-Em **DNS → Records**: `A` `demo` → `187.127.254.219`, **Proxy = Proxied (laranja)**.
+Em **DNS → Records**: `A` `demo` → `<IP-DA-VPS>`, **Proxy = Proxied (laranja)**.
 Esconde o IP, ativa DDoS/CDN/WAF.
 
 ## 2. TLS de origem (Origin Certificate, grátis)
@@ -46,7 +46,7 @@ Como a demo escuta em **8443**, crie uma regra de reescrita de porta:
 - **Then → Rewrite to → Destination Port = `8443`**
 
 Assim o visitante usa `https://demo.bagre.dev` normal e o Cloudflare fala com a
-origem em `187.127.254.219:8443`.
+origem em `<IP-DA-VPS>:8443`.
 
 ## 4. Proteções de borda grátis
 
