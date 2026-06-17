@@ -1,0 +1,136 @@
+# Overlay do ambiente de DEMONSTRAÇÃO público (demo.bagre.dev).
+#
+# Sobe o IPAM + Zabbix com DEMO_MODE ligado: usuários demo, integração Zabbix
+# já fixada na instância in-stack e sincronização inicial automática. O fluxo
+# de descoberta de hosts (pending → aprovação 1 clique) fica pronto na 1ª visita.
+#
+# Uso (precisa também do overlay do Zabbix):
+#   docker compose -f docker-compose.yml -f docker-compose.zabbix-dev.yml -f docker-compose.demo.yml up -d
+#
+# Reset diário em infra/demo/reset.sh (cron 04h BRT).
+# Nota: o demo de cloud/LocalStack/FinOps é fast-follow — não entra aqui.
+
+services:
+  api:
+    environment:
+      DEMO_MODE: "true"
+      DEMO_ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-demo-admin@bagre.dev}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-demo-admin}
+      DEMO_READER_EMAIL: ${DEMO_READER_EMAIL:-demo-reader@bagre.dev}
+      DEMO_READER_PASSWORD: ${DEMO_READER_PASSWORD:-demo-reader}
+      DEMO_ZABBIX_URL: http://zabbix-web:8080
+      DEMO_ZABBIX_USER: Admin
+      DEMO_ZABBIX_PASS: zabbix
+      DEMO_PROMETHEUS_URL: http://prometheus:9090
+      DEMO_DNS_URL: http://powerdns:8081
+      DEMO_DNS_KEY: bagre-demo-key
+      DEMO_DNS_ZONE: lab.local
+    # demo-seed roda em BACKGROUND pra o servidor subir na hora (evita 502 longo
+    # no boot/reset enquanto os syncs rodam). Os syncs populam em paralelo.
+    command:
+      - sh
+      - -c
+      - "npx prisma db push --accept-data-loss && node src/import.js --if-empty /app/seed.json && (node scripts/demo-seed.mjs || true &) && node src/index.js"
+    mem_limit: 512m
+
+  db:
+    mem_limit: 512m
+
+  web:
+    mem_limit: 128m
+
+  # Popula o Zabbix com hosts realistas (13-17). É idempotente e roda também
+  # no reset diário. Repete a tentativa até o Zabbix-web/DB ficarem prontos.
+  zabbix-seed:
+    image: node:20-alpine
+    container_name: bagre-zabbix-seed
+    restart: "no"
+    depends_on:
+      - zabbix-web
+    environment:
+      ZBX_URL: http://zabbix-web:8080
+      ZBX_USER: Admin
+      ZBX_PASS: zabbix
+    volumes:
+      - ./scripts/seed-zabbix-dev.mjs:/app/seed-zabbix-dev.mjs:ro
+    command:
+      - sh
+      - -c
+      - "for i in $$(seq 1 30); do node /app/seed-zabbix-dev.mjs && exit 0; echo 'zabbix ainda não pronto, retry em 10s'; sleep 10; done; echo 'zabbix-seed desistiu (scheduler/reset cobrem)'; exit 0"
+
+  # Limites de memória do overlay Zabbix (carregado pelo arquivo zabbix-dev).
+  zabbix-db:
+    mem_limit: 512m
+  zabbix-server:
+    mem_limit: 512m
+  zabbix-web:
+    mem_limit: 256m
+
+  # --- Prometheus do demo (descoberta de hosts via /api/v1/targets) ---
+  # Faz scrape de 3 node-exporters em IPs estáticos (10.140.0.x) → o Bagre
+  # descobre cada um como host. prometheus fica nas duas redes: default (pra
+  # api alcançar prometheus:9090) e promnet (pra scrapear os exporters por IP).
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: bagre-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infra/demo/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    mem_limit: 200m
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      default: {}
+      promnet:
+        ipv4_address: 10.140.0.9
+  node-exp-1:
+    image: prom/node-exporter:v1.8.2
+    container_name: bagre-node-exp-1
+    restart: unless-stopped
+    mem_limit: 48m
+    networks:
+      promnet:
+        ipv4_address: 10.140.0.10
+  node-exp-2:
+    image: prom/node-exporter:v1.8.2
+    container_name: bagre-node-exp-2
+    restart: unless-stopped
+    mem_limit: 48m
+    networks:
+      promnet:
+        ipv4_address: 10.140.0.11
+  node-exp-3:
+    image: prom/node-exporter:v1.8.2
+    container_name: bagre-node-exp-3
+    restart: unless-stopped
+    mem_limit: 48m
+    networks:
+      promnet:
+        ipv4_address: 10.140.0.12
+
+  # --- PowerDNS do demo (DNS sync) — autoritativo INTERNO, backend sqlite ---
+  # Init: carrega o schema sqlite (1ª vez) e cria a zona lab.local; depois sobe.
+  powerdns:
+    image: powerdns/pdns-auth-49:latest
+    container_name: bagre-powerdns
+    restart: unless-stopped
+    volumes:
+      - ./infra/demo/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - pdns_data:/var/lib/powerdns
+    entrypoint:
+      - sh
+      - -c
+      - "DB=/var/lib/powerdns/pdns.sqlite3; [ -f \"$$DB\" ] || sqlite3 \"$$DB\" < /usr/local/share/doc/pdns/schema.sqlite3.sql; pdnsutil --config-dir=/etc/powerdns create-zone lab.local 2>/dev/null || true; exec pdns_server --config-dir=/etc/powerdns --daemon=no"
+    mem_limit: 96m
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  promnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.140.0.0/24
+
+volumes:
+  pdns_data:

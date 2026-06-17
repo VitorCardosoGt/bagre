@@ -23,13 +23,13 @@ export default function Login() {
   const ssoEnabled = cfg?.auth?.oidc?.enabled;
   const ssoLabel = cfg?.auth?.oidc?.buttonLabel || 'Entrar com Microsoft';
   const signupEnabled = cfg?.auth?.signup?.enabled !== false;
+  const demo = cfg?.demo?.enabled ? cfg.demo : null;
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function doLogin(em, pw) {
     setLoading(true);
     setErr(null);
     try {
-      const user = await login(email, password);
+      const user = await login(em, pw);
       if (user.mustChangePwd) {
         navigate('/profile?force=1', { replace: true });
       } else {
@@ -40,6 +40,11 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    await doLogin(email, password);
   }
 
   return (
@@ -59,8 +64,37 @@ export default function Login() {
         <form onSubmit={onSubmit} className="card-elevated p-7 space-y-5">
           <div className="space-y-1 mb-2">
             <h1 className="text-xl font-semibold">Bem-vindo de volta</h1>
-            <p className="text-sm text-slate-500">Entre com suas credenciais para continuar</p>
+            <p className="text-sm text-slate-500">
+              {demo
+                ? 'Escolha um perfil abaixo para entrar no ambiente de demonstração.'
+                : 'Entre com suas credenciais para continuar'}
+            </p>
           </div>
+
+          {demo && (
+            <div className="space-y-2.5 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3.5">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Ambiente de demonstração — entre com 1 clique:
+              </p>
+              <div className="flex flex-col gap-2">
+                {demo.accounts?.map((acc) => (
+                  <button
+                    key={acc.role}
+                    type="button"
+                    onClick={() => doLogin(acc.email, acc.password)}
+                    disabled={loading}
+                    className="btn w-full justify-center py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-100 font-medium"
+                  >
+                    <LogIn size={15} />
+                    {acc.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                Os dados são reiniciados diariamente às 04h (BRT).
+              </p>
+            </div>
+          )}
 
           {err && (
             <div className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-300 px-3 py-2.5 rounded-lg border border-rose-200 dark:border-rose-800">
@@ -69,65 +103,69 @@ export default function Login() {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              E-mail
-            </label>
-            <div className="relative">
-              <Mail
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="email"
-                autoFocus
-                required
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input pl-10"
-              />
-            </div>
-          </div>
+          {!demo && (
+            <>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  E-mail
+                </label>
+                <div className="relative">
+                  <Mail
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="email"
+                    autoFocus
+                    required
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="input pl-10"
+                  />
+                </div>
+              </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Senha
-              </label>
-              <Link
-                to="/reset"
-                className="text-xs text-brand-600 hover:text-brand-700 hover:underline"
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Senha
+                  </label>
+                  <Link
+                    to="/reset"
+                    className="text-xs text-brand-600 hover:text-brand-700 hover:underline"
+                  >
+                    Esqueci a senha
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input pl-10"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary w-full justify-center py-2.5 text-base"
+                disabled={loading}
               >
-                Esqueci a senha
-              </Link>
-            </div>
-            <div className="relative">
-              <Lock
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input pl-10"
-              />
-            </div>
-          </div>
+                <LogIn size={16} />
+                {loading ? 'Entrando…' : 'Entrar'}
+              </button>
+            </>
+          )}
 
-          <button
-            type="submit"
-            className="btn-primary w-full justify-center py-2.5 text-base"
-            disabled={loading}
-          >
-            <LogIn size={16} />
-            {loading ? 'Entrando…' : 'Entrar'}
-          </button>
-
-          {ssoEnabled && (
+          {!demo && ssoEnabled && (
             <>
               <div className="relative my-1">
                 <div className="absolute inset-0 flex items-center">
@@ -147,7 +185,7 @@ export default function Login() {
             </>
           )}
 
-          {signupEnabled && (
+          {!demo && signupEnabled && (
             <div className="text-center text-sm text-slate-500 pt-2">
               Ainda não tem conta?{' '}
               <Link

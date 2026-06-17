@@ -191,6 +191,13 @@ export default function Audit() {
               <Field label="Objeto">
                 {ENTITY_LABELS[detail.entity] || detail.entity} #{detail.entityId}
               </Field>
+              <Field label="IP de origem">
+                {detail.ip ? (
+                  <span className="font-mono">{detail.ip}</span>
+                ) : (
+                  <span className="text-slate-400">—</span>
+                )}
+              </Field>
             </div>
             <DiffView before={detail.before} after={detail.after} />
           </div>

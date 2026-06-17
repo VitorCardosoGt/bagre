@@ -12,6 +12,26 @@ Mudanças que estão em `main` e ainda não entraram em release oficial.
 
 ---
 
+## [1.0.0] — 2026-06-17
+
+**Tema:** Marco 1.0 — pronto para produção, com site oficial e demo público ao vivo.
+
+A v1.0 consolida o conjunto já maduro do Bagre (IPAM central, IPv6 first-class, cloud sync multi-provider, FinOps, descoberta via Zabbix/Prometheus, DNS sync, validation engine, calculadora CIDR, bulk ops, histórico de capacidade, RBAC e SSO) como release estável de produção. O foco do ciclo foi estabilidade, demonstrabilidade e polimento — sem novas features de IPAM.
+
+### Adicionado
+- **Ambiente de demonstração (`DEMO_MODE`)** — instância pública compartilhada com login em 1 clique (perfis Admin e Leitor), banner de demonstração e dados reiniciados diariamente às 04h (BRT). No modo demo o formulário de e-mail/senha (e SSO/cadastro) fica oculto — entra-se só pelos perfis demo. Alvo das integrações fixado na instância interna (proteção anti-SSRF) e sincronização inicial automática em background (servidor sobe sem espera).
+- **Demo de descoberta de hosts end-to-end** — host descoberto → pendência → aprovação em 1 clique, alimentado por **Zabbix** e **Prometheus** simultaneamente, mais **PowerDNS** (DNS sync) na mesma instância.
+- **Coluna "Fonte" em Aprovações** — cada descoberta pendente mostra de onde veio (Zabbix, Prometheus, Ingest, Manual) com badge colorido.
+- **IP de origem no log de auditoria** — eventos passam a registrar o IP de quem fez a ação.
+- **Descrições claras nos cards de integração** — texto curto e objetivo explicando o que cada integração faz e que descobertas viram pendências de aprovação.
+- **Site oficial** em [bagre.dev](https://bagre.dev) e demo público em [demo.bagre.dev](https://demo.bagre.dev).
+
+### Segurança / hardening
+- Revisão geral de marca e limpeza de referências legadas em código, docs, seeds e branding.
+- Demo atrás de Cloudflare + nginx (rate-limit, headers de segurança, TLS de origem) com o alvo das integrações imutável no modo demo.
+
+---
+
 ## [0.5.0] — 2026-05-28
 
 **Tema:** Cleanup completo do backlog + integrações maduras com UI.
@@ -37,7 +57,7 @@ Release que fecha 8 issues numa tacada, entrega DNS sync e validation engine end
   - **XLSX** — primeira aba tratada como CSV-like (mesmas colunas reconhecidas)
   - Limite 25MB por upload. Função `importSeed(seed)` extraída do legacy `runImport` pra reuso.
 - YAML e NetBox export — não implementados nesta iteração (issue aberta pra continuar).
-- **Suporte IPv6 first-class — fase 1** ([#10](https://github.com/fabgcruz/2bagre/issues/10)) — schema já era agnóstico, agora os helpers de CIDR também. `apps/api/src/cidr.js` ganha `parseIpv6Cidr` (BigInt 128-bit), `detectIpVersion`, `normalizeAddress` (compactação canônica `::`). `expandCidr` retorna `[]` para IPv6 — subnets v6 são criadas sem pré-enumeração de IPs (um /64 tem 18.4 quintilhões de endereços; enumerar não escala).
+- **Suporte IPv6 first-class — fase 1** ([#10](https://github.com/fabgcruz/bagre/issues/10)) — schema já era agnóstico, agora os helpers de CIDR também. `apps/api/src/cidr.js` ganha `parseIpv6Cidr` (BigInt 128-bit), `detectIpVersion`, `normalizeAddress` (compactação canônica `::`). `expandCidr` retorna `[]` para IPv6 — subnets v6 são criadas sem pré-enumeração de IPs (um /64 tem 18.4 quintilhões de endereços; enumerar não escala).
 - **`POST /api/subnets/:id/ips`** — novo endpoint para criar IPs ad-hoc em uma subnet. Único caminho viável para alocar endereços IPv6, mas também serve pra IPv4 quando o operador precisa adicionar um IP fora do range pré-criado (ex: IPs secundários em interfaces multi-tap).
 - **`GET /api/cidr/parse`** suporta IPv6 — retorna network, last address e total ("2^N"). Operações split/merge/next-free ainda são IPv4-only (próxima iteração).
 - **Screenshots no README** ([#9](https://github.com/fabgcruz/bagre/issues/9)) — galeria 2x2 com dashboard, subnet detail, calculadora CIDR e cloud accounts, capturados via Playwright em viewport 1440x900. Repositório agora mostra visualmente o que o produto faz antes do leitor rolar.
@@ -176,7 +196,7 @@ Primeira entrega significativa pós-lançamento. O Bagre passa a conectar contas
 - `docker compose up -d` agora funciona em clone fresh (antes nginx crash-loopava sem certs TLS, e a API explodia tentando ler `seed.json` inexistente como diretório).
 - README ajustado pra URL real do repo (não `SEU-USUARIO`).
 - Renomeado `CLAUDE.md` → `AGENTS.md` (convenção neutra; remove qualquer referência a ferramenta específica).
-- Removidas todas as referências a "Duosystem" (legacy do fork de origem) em código, docs, seeds, branding e mensagens de commit. Histórico reescrito pra zerar traços.
+- Revisão geral de marca: limpeza de referências legadas em código, docs, seeds, branding e mensagens de commit.
 
 ---
 

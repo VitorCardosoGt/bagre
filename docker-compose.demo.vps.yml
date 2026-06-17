@@ -1,0 +1,68 @@
+# Overlay de PRODUÇÃO na VPS (co-locado com outros serviços), focado em segurança.
+#
+# A demo é autocontida e isolada: sobe seu PRÓPRIO nginx (demo-nginx) escutando
+# em 0.0.0.0:8443 — porta livre no host (o :80/:443 continuam de quem já os usa).
+# O Cloudflare (laranja, Full strict) entrega demo.bagre.dev e conecta na origem
+# em :8443 (via Origin Rule). Nenhum outro serviço do host é tocado.
+#
+# Uso (na VPS):
+#   docker compose \
+#     -f docker-compose.yml \
+#     -f docker-compose.zabbix-dev.yml \
+#     -f docker-compose.demo.yml \
+#     -f docker-compose.demo.vps.yml \
+#     up -d
+#
+# Requer Docker Compose v2.24+ (tags !override / !reset). Ver infra/demo/cloudflare-setup.md.
+
+services:
+  # nginx próprio da demo — único ponto exposto (8443). TLS de origem (Cloudflare
+  # Origin Cert), rate-limit e security headers; proxia para o `web` interno.
+  demo-nginx:
+    image: nginx:alpine
+    container_name: bagre-demo-nginx
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./infra/demo/nginx-demo.bagre.dev.conf:/etc/nginx/conf.d/default.conf:ro
+      # Coloque origin.pem / origin.key (Cloudflare Origin Cert) neste diretório do host:
+      - /etc/ssl/bagre-demo:/etc/nginx/ssl:ro
+    mem_limit: 64m
+    security_opt:
+      - no-new-privileges:true
+
+  # App web (SPA + proxy interno de /api) — interno, sem porta no host.
+  web:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+
+  # API interna — o nginx do `web` já proxia /api e /metrics para api:3001.
+  api:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # Postgres NUNCA público — o base publica 5433; aqui removemos.
+  db:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+
+  # Zabbix 100% interno — nunca publicado.
+  zabbix-web:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+  zabbix-server:
+    ports: !reset null
+    security_opt:
+      - no-new-privileges:true
+  zabbix-db:
+    security_opt:
+      - no-new-privileges:true

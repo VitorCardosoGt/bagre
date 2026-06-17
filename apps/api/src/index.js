@@ -37,7 +37,9 @@ import { startScheduler as startSnapshotScheduler } from './integrations/utiliza
 const PORT = Number(process.env.PORT || 3001);
 
 async function build() {
-  const app = Fastify({ logger: { level: 'info' } });
+  // trustProxy: atrás do nginx/reverse-proxy (demo, self-host), faz req.ip
+  // refletir o cliente real via X-Forwarded-For — necessário pro rate-limit.
+  const app = Fastify({ logger: { level: 'info' }, trustProxy: true });
 
   await app.register(cors, { origin: true, credentials: true });
   await app.register(cookie);

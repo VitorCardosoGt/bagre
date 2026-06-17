@@ -6,7 +6,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 const PROVIDERS = [
-  { id: 'powerdns', label: 'PowerDNS', impl: true, hint: 'API HTTP nativa, comunidade brasileira ampla' },
+  { id: 'powerdns', label: 'PowerDNS', impl: true, hint: 'DNS em sincronia automática com o inventário (API HTTP nativa)' },
   { id: 'bind', label: 'BIND', impl: false, hint: 'via nsupdate (próxima iteração)' },
   { id: 'route53', label: 'Route 53', impl: false, hint: 'AWS SDK (próxima iteração)' },
   { id: 'cloudflare', label: 'Cloudflare', impl: false, hint: 'API REST (próxima iteração)' },
@@ -69,8 +69,21 @@ export default function DnsSettings() {
     <div className="max-w-3xl">
       <PageHeader
         title="DNS sync (PowerDNS)"
-        description="Sincroniza hostnames do IPAM como A records numa zona do PowerDNS. Records gerenciados pelo Bagre são marcados pra não pisar em registros manuais."
+        description="Mantenha o DNS sempre em sincronia com o inventário de IPs — automático, sem editar zona na mão."
       />
+
+      <div className="card p-4 mb-5 border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-900/10">
+        <div className="flex gap-3">
+          <Globe size={18} className="text-blue-600 shrink-0 mt-0.5" />
+          <div className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            <span className="font-semibold text-navy-900 dark:text-white">A vantagem:</span> seu IPAM já sabe qual
+            hostname pertence a cada IP. Em vez de manter o DNS na mão (e ele sempre desatualizar), o Bagre publica
+            esses nomes como <span className="font-medium">registros A</span> na sua zona automaticamente — o DNS fica
+            sempre batendo com o inventário, <span className="font-medium">sem drift e sem trabalho manual</span>. O
+            Bagre só mexe nos registros que ele criou (marcados como gerenciados); seus registros manuais ficam intactos.
+          </div>
+        </div>
+      </div>
 
       <div className="card p-5 mb-5">
         <div className="flex items-start justify-between gap-3">

@@ -200,6 +200,7 @@ model AuditLog {
   before    Json?
   after     Json?
   actor     String?
+  ip        String? // IP de origem da requisição (via trustProxy / X-Forwarded-For)
   createdAt DateTime @default(now())
 
   @@index([entity, entityId])

@@ -94,6 +94,12 @@ export default function Layout({ children }) {
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const { data: cfg } = useQuery({
+    queryKey: ['app-config'],
+    queryFn: api.config,
+    staleTime: 60_000,
+  });
+  const demoBanner = cfg?.demo?.enabled ? cfg.demo.banner : null;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -162,19 +168,6 @@ export default function Layout({ children }) {
               )}
             </NavLink>
           ))}
-
-          {/* Link externo pra Wiki (container DokuWiki separado, porta 8090) */}
-          <a
-            href={buildWikiUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
-            title="Abre a documentação em nova aba"
-          >
-            <BookOpen size={16} />
-            <span className="flex-1">Wiki</span>
-            <ExternalLink size={11} className="text-slate-400 group-hover:text-slate-500" />
-          </a>
         </nav>
         <div className="p-3 space-y-2">
           <button
@@ -195,6 +188,12 @@ export default function Layout({ children }) {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0">
+        {demoBanner && (
+          <div className="bg-amber-500 text-amber-950 text-center text-xs font-medium px-4 py-1.5 flex items-center justify-center gap-2">
+            <Activity size={13} />
+            {demoBanner}
+          </div>
+        )}
         <header className="sticky top-0 z-20 h-14 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 flex items-center gap-4">
           <GlobalSearch />
           <div className="ml-auto relative" ref={menuRef}>
