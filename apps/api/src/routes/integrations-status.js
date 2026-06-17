@@ -18,7 +18,7 @@ async function zabbixStatus() {
     key: 'zabbix',
     name: 'Zabbix',
     icon: '📡',
-    description: 'Sincroniza hosts monitorados como IPs no IPAM. Detecta stale e fantasmas.',
+    description: 'Descobre os hosts monitorados e cria pendências pra você aprovar em Aprovações. IPs já no IPAM são atualizados automaticamente.',
     configured,
     enabled: cfg.enabled,
     lastTest: cfg.lastTestedAt

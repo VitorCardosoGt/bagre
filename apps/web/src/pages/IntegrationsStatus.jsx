@@ -264,10 +264,22 @@ function IntegrationCard({ integration, onTest, testing }) {
           <>
             <dt className="text-xs text-slate-400 uppercase tracking-wider">Última leitura</dt>
             <dd className="text-right text-xs font-mono">
-              {integration.lastSync.stats.hosts ?? 0} hosts ·{' '}
-              {integration.lastSync.stats.updated ?? 0} upd ·{' '}
-              {(integration.lastSync.stats.ghosts || []).length} 👻
+              {integration.lastSync.stats.hosts ?? integration.lastSync.stats.targets ?? 0} descobertos ·{' '}
+              {integration.lastSync.stats.updated ?? 0} já no IPAM
             </dd>
+            {(integration.lastSync.stats.ghosts || []).length > 0 && (
+              <>
+                <dt className="text-xs text-slate-400 uppercase tracking-wider">A aprovar</dt>
+                <dd className="text-right">
+                  <Link
+                    to="/admin/pending-discoveries"
+                    className="text-xs font-medium text-brand-600 hover:underline"
+                  >
+                    {(integration.lastSync.stats.ghosts || []).length} hosts em Aprovações →
+                  </Link>
+                </dd>
+              </>
+            )}
           </>
         )}
         {integration.ipsTouched > 0 && (
