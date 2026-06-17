@@ -64,7 +64,11 @@ export default function Login() {
         <form onSubmit={onSubmit} className="card-elevated p-7 space-y-5">
           <div className="space-y-1 mb-2">
             <h1 className="text-xl font-semibold">Bem-vindo de volta</h1>
-            <p className="text-sm text-slate-500">Entre com suas credenciais para continuar</p>
+            <p className="text-sm text-slate-500">
+              {demo
+                ? 'Escolha um perfil abaixo para entrar no ambiente de demonstração.'
+                : 'Entre com suas credenciais para continuar'}
+            </p>
           </div>
 
           {demo && (
@@ -99,65 +103,69 @@ export default function Login() {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              E-mail
-            </label>
-            <div className="relative">
-              <Mail
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="email"
-                autoFocus
-                required
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input pl-10"
-              />
-            </div>
-          </div>
+          {!demo && (
+            <>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  E-mail
+                </label>
+                <div className="relative">
+                  <Mail
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="email"
+                    autoFocus
+                    required
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="input pl-10"
+                  />
+                </div>
+              </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Senha
-              </label>
-              <Link
-                to="/reset"
-                className="text-xs text-brand-600 hover:text-brand-700 hover:underline"
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Senha
+                  </label>
+                  <Link
+                    to="/reset"
+                    className="text-xs text-brand-600 hover:text-brand-700 hover:underline"
+                  >
+                    Esqueci a senha
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input pl-10"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary w-full justify-center py-2.5 text-base"
+                disabled={loading}
               >
-                Esqueci a senha
-              </Link>
-            </div>
-            <div className="relative">
-              <Lock
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input pl-10"
-              />
-            </div>
-          </div>
+                <LogIn size={16} />
+                {loading ? 'Entrando…' : 'Entrar'}
+              </button>
+            </>
+          )}
 
-          <button
-            type="submit"
-            className="btn-primary w-full justify-center py-2.5 text-base"
-            disabled={loading}
-          >
-            <LogIn size={16} />
-            {loading ? 'Entrando…' : 'Entrar'}
-          </button>
-
-          {ssoEnabled && (
+          {!demo && ssoEnabled && (
             <>
               <div className="relative my-1">
                 <div className="absolute inset-0 flex items-center">
@@ -177,7 +185,7 @@ export default function Login() {
             </>
           )}
 
-          {signupEnabled && (
+          {!demo && signupEnabled && (
             <div className="text-center text-sm text-slate-500 pt-2">
               Ainda não tem conta?{' '}
               <Link
