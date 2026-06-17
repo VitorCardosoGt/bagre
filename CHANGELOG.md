@@ -19,11 +19,16 @@ Mudanças que estão em `main` e ainda não entraram em release oficial.
 A v1.0 consolida o conjunto já maduro do Bagre (IPAM central, IPv6 first-class, cloud sync multi-provider, FinOps, descoberta via Zabbix/Prometheus, DNS sync, validation engine, calculadora CIDR, bulk ops, histórico de capacidade, RBAC e SSO) como release estável de produção. O foco do ciclo foi estabilidade, demonstrabilidade e polimento — sem novas features de IPAM.
 
 ### Adicionado
-- **Ambiente de demonstração (`DEMO_MODE`)** — instância pública compartilhada com login em 1 clique (perfis Admin e Leitor), banner de demonstração e dados reiniciados diariamente às 04h (BRT). Demonstra a **descoberta de hosts via Zabbix** end-to-end (host → pending discovery → aprovação em 1 clique), com alvo de integração fixado na instância interna (proteção anti-SSRF) e sincronização inicial automática.
-- **Site oficial** em [bagre.dev](https://bagre.dev).
+- **Ambiente de demonstração (`DEMO_MODE`)** — instância pública compartilhada com login em 1 clique (perfis Admin e Leitor), banner de demonstração e dados reiniciados diariamente às 04h (BRT). No modo demo o formulário de e-mail/senha (e SSO/cadastro) fica oculto — entra-se só pelos perfis demo. Alvo das integrações fixado na instância interna (proteção anti-SSRF) e sincronização inicial automática em background (servidor sobe sem espera).
+- **Demo de descoberta de hosts end-to-end** — host descoberto → pendência → aprovação em 1 clique, alimentado por **Zabbix** e **Prometheus** simultaneamente, mais **PowerDNS** (DNS sync) na mesma instância.
+- **Coluna "Fonte" em Aprovações** — cada descoberta pendente mostra de onde veio (Zabbix, Prometheus, Ingest, Manual) com badge colorido.
+- **IP de origem no log de auditoria** — eventos passam a registrar o IP de quem fez a ação.
+- **Descrições claras nos cards de integração** — texto curto e objetivo explicando o que cada integração faz e que descobertas viram pendências de aprovação.
+- **Site oficial** em [bagre.dev](https://bagre.dev) e demo público em [demo.bagre.dev](https://demo.bagre.dev).
 
 ### Segurança / hardening
 - Revisão geral de marca e limpeza de referências legadas em código, docs, seeds e branding.
+- Demo atrás de Cloudflare + nginx (rate-limit, headers de segurança, TLS de origem) com o alvo das integrações imutável no modo demo.
 
 ---
 
