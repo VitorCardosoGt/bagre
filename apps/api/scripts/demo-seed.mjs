@@ -15,6 +15,7 @@
 import { prisma } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { getConfig, syncFromZabbix } from '../src/integrations/zabbix.js';
+import { getConfig as getPromConfig, syncFromPrometheus } from '../src/integrations/prometheus.js';
 
 const DEMO = process.env.DEMO_MODE === 'true';
 
@@ -26,6 +27,8 @@ const DEMO_READER_PASSWORD = process.env.DEMO_READER_PASSWORD || 'demo-reader';
 const ZBX_URL = process.env.DEMO_ZABBIX_URL || 'http://zabbix-web:8080';
 const ZBX_USER = process.env.DEMO_ZABBIX_USER || 'Admin';
 const ZBX_PASS = process.env.DEMO_ZABBIX_PASS || 'zabbix';
+
+const PROM_URL = process.env.DEMO_PROMETHEUS_URL || 'http://prometheus:9090';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -98,6 +101,35 @@ async function initialZabbixSync() {
     if (attempt < maxAttempts) await sleep(10_000);
   }
   console.warn('[demo-seed] sync inicial sem hosts após retries — o scheduler vai recuperar');
+}
+
+async function wirePrometheus() {
+  await prisma.prometheusConfig.upsert({
+    where: { id: 1 },
+    create: { id: 1, enabled: true, url: PROM_URL, authType: 'none', intervalMinutes: 15, jobFilter: [] },
+    update: { enabled: true, url: PROM_URL, authType: 'none' },
+  });
+  console.log(`[demo-seed] Prometheus fixado em ${PROM_URL}`);
+}
+
+async function initialPrometheusSync() {
+  // Prometheus + node-exporters levam alguns segundos pra ficar "up".
+  const maxAttempts = 12;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const cfg = await getPromConfig();
+      const result = await syncFromPrometheus(cfg);
+      if (result?.targets > 0) {
+        console.log(`[demo-seed] sync Prometheus OK — ${result.targets} targets`);
+        return;
+      }
+      console.log(`[demo-seed] tentativa prom ${attempt}/${maxAttempts}: sem targets ainda`);
+    } catch (err) {
+      console.log(`[demo-seed] tentativa prom ${attempt}/${maxAttempts}: ${err.message}`);
+    }
+    if (attempt < maxAttempts) await sleep(10_000);
+  }
+  console.warn('[demo-seed] Prometheus sem targets após retries — o scheduler recupera');
 }
 
 // Dados base fictícios para a demo não começar vazia. Faixas escolhidas para
@@ -204,7 +236,9 @@ async function main() {
   await upsertDemoUser(DEMO_READER_EMAIL, DEMO_READER_PASSWORD, 'READER');
   await seedBaseData();
   await wireZabbix();
+  await wirePrometheus();
   await initialZabbixSync();
+  await initialPrometheusSync();
   console.log('[demo-seed] concluído.');
 }
 

@@ -21,6 +21,7 @@ services:
       DEMO_ZABBIX_URL: http://zabbix-web:8080
       DEMO_ZABBIX_USER: Admin
       DEMO_ZABBIX_PASS: zabbix
+      DEMO_PROMETHEUS_URL: http://prometheus:9090
     # Insere o demo-seed entre o import normal e o start do servidor.
     command:
       - sh
@@ -60,3 +61,52 @@ services:
     mem_limit: 512m
   zabbix-web:
     mem_limit: 256m
+
+  # --- Prometheus do demo (descoberta de hosts via /api/v1/targets) ---
+  # Faz scrape de 3 node-exporters em IPs estáticos (10.140.0.x) → o Bagre
+  # descobre cada um como host. prometheus fica nas duas redes: default (pra
+  # api alcançar prometheus:9090) e promnet (pra scrapear os exporters por IP).
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: bagre-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infra/demo/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    mem_limit: 200m
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      default: {}
+      promnet:
+        ipv4_address: 10.140.0.9
+  node-exp-1:
+    image: prom/node-exporter:v1.8.2
+    container_name: bagre-node-exp-1
+    restart: unless-stopped
+    mem_limit: 48m
+    networks:
+      promnet:
+        ipv4_address: 10.140.0.10
+  node-exp-2:
+    image: prom/node-exporter:v1.8.2
+    container_name: bagre-node-exp-2
+    restart: unless-stopped
+    mem_limit: 48m
+    networks:
+      promnet:
+        ipv4_address: 10.140.0.11
+  node-exp-3:
+    image: prom/node-exporter:v1.8.2
+    container_name: bagre-node-exp-3
+    restart: unless-stopped
+    mem_limit: 48m
+    networks:
+      promnet:
+        ipv4_address: 10.140.0.12
+
+networks:
+  promnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.140.0.0/24
