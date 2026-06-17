@@ -16,6 +16,7 @@ import { prisma } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { getConfig, syncFromZabbix } from '../src/integrations/zabbix.js';
 import { getConfig as getPromConfig, syncFromPrometheus } from '../src/integrations/prometheus.js';
+import * as powerdnsProvider from '../src/integrations/dns/powerdns.js';
 
 const DEMO = process.env.DEMO_MODE === 'true';
 
@@ -29,6 +30,10 @@ const ZBX_USER = process.env.DEMO_ZABBIX_USER || 'Admin';
 const ZBX_PASS = process.env.DEMO_ZABBIX_PASS || 'zabbix';
 
 const PROM_URL = process.env.DEMO_PROMETHEUS_URL || 'http://prometheus:9090';
+
+const DNS_URL = process.env.DEMO_DNS_URL || 'http://powerdns:8081';
+const DNS_KEY = process.env.DEMO_DNS_KEY || 'bagre-demo-key';
+const DNS_ZONE = process.env.DEMO_DNS_ZONE || 'lab.local';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -130,6 +135,45 @@ async function initialPrometheusSync() {
     if (attempt < maxAttempts) await sleep(10_000);
   }
   console.warn('[demo-seed] Prometheus sem targets após retries — o scheduler recupera');
+}
+
+async function wireDns() {
+  await prisma.dnsConfig.upsert({
+    where: { id: 1 },
+    create: { id: 1, enabled: true, provider: 'powerdns', baseUrl: DNS_URL, apiKey: DNS_KEY, serverId: 'localhost', defaultZone: DNS_ZONE, intervalMinutes: 60 },
+    update: { enabled: true, provider: 'powerdns', baseUrl: DNS_URL, apiKey: DNS_KEY, serverId: 'localhost', defaultZone: DNS_ZONE },
+  });
+  console.log(`[demo-seed] DNS (PowerDNS) fixado em ${DNS_URL} · zona ${DNS_ZONE}`);
+}
+
+async function initialDnsSync() {
+  // PowerDNS leva alguns segundos pra subir (init do sqlite + zona).
+  const maxAttempts = 12;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const cfg = await prisma.dnsConfig.findUnique({ where: { id: 1 } });
+      const t = await powerdnsProvider.testConnection(cfg);
+      if (t.ok) {
+        const r = await powerdnsProvider.applySync(prisma, cfg);
+        await prisma.dnsConfig.update({
+          where: { id: 1 },
+          data: {
+            lastTestedAt: new Date(), lastTestStatus: 'ok', lastTestMessage: t.message,
+            lastSyncAt: new Date(), lastSyncStatus: 'ok',
+            lastSyncMessage: `aplicado ${r.applied} RRsets`,
+            lastSyncStats: { applied: r.applied, created: r.toCreate.length, updated: r.toUpdate.length, deleted: r.toDelete.length },
+          },
+        });
+        console.log(`[demo-seed] DNS sync OK — ${r.applied} RRsets na zona ${DNS_ZONE}`);
+        return;
+      }
+      console.log(`[demo-seed] tentativa dns ${attempt}/${maxAttempts}: ${t.message}`);
+    } catch (err) {
+      console.log(`[demo-seed] tentativa dns ${attempt}/${maxAttempts}: ${err.message}`);
+    }
+    if (attempt < maxAttempts) await sleep(10_000);
+  }
+  console.warn('[demo-seed] DNS sync não completou — verifique o PowerDNS');
 }
 
 // Dados base fictícios para a demo não começar vazia. Faixas escolhidas para
@@ -237,8 +281,10 @@ async function main() {
   await seedBaseData();
   await wireZabbix();
   await wirePrometheus();
+  await wireDns();
   await initialZabbixSync();
   await initialPrometheusSync();
+  await initialDnsSync();
   console.log('[demo-seed] concluído.');
 }
 

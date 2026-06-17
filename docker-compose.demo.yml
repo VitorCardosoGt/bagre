@@ -22,11 +22,15 @@ services:
       DEMO_ZABBIX_USER: Admin
       DEMO_ZABBIX_PASS: zabbix
       DEMO_PROMETHEUS_URL: http://prometheus:9090
-    # Insere o demo-seed entre o import normal e o start do servidor.
+      DEMO_DNS_URL: http://powerdns:8081
+      DEMO_DNS_KEY: bagre-demo-key
+      DEMO_DNS_ZONE: lab.local
+    # demo-seed roda em BACKGROUND pra o servidor subir na hora (evita 502 longo
+    # no boot/reset enquanto os syncs rodam). Os syncs populam em paralelo.
     command:
       - sh
       - -c
-      - "npx prisma db push --accept-data-loss && node src/import.js --if-empty /app/seed.json && node scripts/demo-seed.mjs && node src/index.js"
+      - "npx prisma db push --accept-data-loss && node src/import.js --if-empty /app/seed.json && (node scripts/demo-seed.mjs || true &) && node src/index.js"
     mem_limit: 512m
 
   db:
@@ -104,9 +108,29 @@ services:
       promnet:
         ipv4_address: 10.140.0.12
 
+  # --- PowerDNS do demo (DNS sync) — autoritativo INTERNO, backend sqlite ---
+  # Init: carrega o schema sqlite (1ª vez) e cria a zona lab.local; depois sobe.
+  powerdns:
+    image: powerdns/pdns-auth-49:latest
+    container_name: bagre-powerdns
+    restart: unless-stopped
+    volumes:
+      - ./infra/demo/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - pdns_data:/var/lib/powerdns
+    entrypoint:
+      - sh
+      - -c
+      - "DB=/var/lib/powerdns/pdns.sqlite3; [ -f \"$$DB\" ] || sqlite3 \"$$DB\" < /usr/local/share/doc/pdns/schema.sqlite3.sql; pdnsutil --config-dir=/etc/powerdns create-zone lab.local 2>/dev/null || true; exec pdns_server --config-dir=/etc/powerdns --daemon=no"
+    mem_limit: 96m
+    security_opt:
+      - no-new-privileges:true
+
 networks:
   promnet:
     driver: bridge
     ipam:
       config:
         - subnet: 10.140.0.0/24
+
+volumes:
+  pdns_data:

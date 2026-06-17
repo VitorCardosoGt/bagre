@@ -22,6 +22,24 @@ const STATUS_FILTERS = [
   { id: 'REJECTED', label: 'Rejeitados', icon: XCircle, color: 'rose' },
 ];
 
+// De onde veio a descoberta. Tag visual pra bater o olho (Zabbix x Prometheus x ...).
+const SOURCE_BADGE = {
+  zabbix: { label: 'Zabbix', cls: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20' },
+  prometheus: { label: 'Prometheus', cls: 'bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20' },
+  ingest: { label: 'Ingest', cls: 'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/20' },
+  manual: { label: 'Manual', cls: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:ring-slate-600/30' },
+};
+
+function SourceBadge({ source }) {
+  if (!source) return null;
+  const b = SOURCE_BADGE[source] || { label: source, cls: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:ring-slate-600/30' };
+  return (
+    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset ${b.cls}`}>
+      {b.label}
+    </span>
+  );
+}
+
 function formatDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -112,8 +130,8 @@ export default function PendingDiscoveries() {
         title="Aprovação de descobertas"
         description={
           canEdit
-            ? 'Hosts descobertos pelo Zabbix com IPs que não estão em nenhuma subnet do IPAM. Aprovar cria/popula a subnet. Rejeitar ignora permanentemente.'
-            : 'Hosts descobertos pelo Zabbix (somente leitura).'
+            ? 'Hosts descobertos pelas integrações (Zabbix, Prometheus, DNS…) com IPs que não estão em nenhuma subnet do IPAM. A coluna Fonte mostra de onde veio cada um. Aprovar cria/popula a subnet. Rejeitar ignora permanentemente.'
+            : 'Hosts descobertos pelas integrações (somente leitura). A coluna Fonte mostra de onde veio cada um.'
         }
       />
 
@@ -337,6 +355,7 @@ function DiscoveryTable({ rows, canEdit, selected, onToggle, onApprove, onReject
           {canEdit && <th className="w-8 px-3 py-2"></th>}
           <th className="px-3 py-2">IP</th>
           <th className="px-3 py-2">Hostname</th>
+          <th className="px-3 py-2">Fonte</th>
           <th className="px-3 py-2">Tipo</th>
           <th className="px-3 py-2">Vendor / Modelo</th>
           <th className="px-3 py-2">Visto há</th>
@@ -365,6 +384,9 @@ function DiscoveryTable({ rows, canEdit, selected, onToggle, onApprove, onReject
                 <Server size={12} className="text-slate-400" />
                 {d.hostname || <span className="text-slate-300 italic">—</span>}
               </span>
+            </td>
+            <td className="px-3 py-2">
+              <SourceBadge source={d.source} />
             </td>
             <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">{d.type || '—'}</td>
             <td className="px-3 py-2 text-xs text-slate-500">
