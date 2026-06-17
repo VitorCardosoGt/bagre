@@ -18,7 +18,7 @@ async function zabbixStatus() {
     key: 'zabbix',
     name: 'Zabbix',
     icon: '📡',
-    description: 'Descobre os hosts monitorados e cria pendências pra você aprovar em Aprovações. IPs já no IPAM são atualizados automaticamente.',
+    description: 'Puxa os hosts do seu Zabbix. Os que ainda não estão no IPAM viram pendências pra aprovar em Aprovações.',
     configured,
     enabled: cfg.enabled,
     lastTest: cfg.lastTestedAt
@@ -42,7 +42,7 @@ async function prometheusStatus() {
     key: 'prometheus',
     name: 'Prometheus',
     icon: '🔥',
-    description: 'Descobre hosts a partir de /api/v1/targets. Alternativa cloud-native ao Zabbix.',
+    description: 'Descobre hosts pelos targets do Prometheus e os traz pra aprovar em Aprovações. Ideal pra ambiente cloud-native.',
     configured,
     enabled: cfg.enabled,
     lastTest: cfg.lastTestedAt
@@ -66,7 +66,7 @@ async function dnsStatus() {
     key: 'dns',
     name: cfg.provider === 'powerdns' ? 'PowerDNS' : (cfg.provider || 'DNS'),
     icon: '🌐',
-    description: 'Push de hostnames do IPAM como A records numa zona DNS.',
+    description: 'Publica os hostnames do IPAM no DNS automaticamente — seu DNS sempre em sincronia, sem editar zona na mão.',
     configured,
     enabled: cfg.enabled,
     lastTest: cfg.lastTestedAt
@@ -88,7 +88,7 @@ async function oidcStatus() {
     key: 'oidc',
     name: 'Microsoft Entra ID (SSO)',
     icon: '🔑',
-    description: 'Login corporativo via OIDC. Permite login com conta Microsoft.',
+    description: 'Login corporativo com a conta da empresa — Microsoft Entra ID, Keycloak ou qualquer provedor OIDC.',
     configured,
     enabled: cfg.enabled,
     lastTest: cfg.lastTestedAt
