@@ -7,7 +7,7 @@ function actorOf(req) {
   return null;
 }
 
-export async function audit({ entity, entityId, action, before, after, actor }) {
+export async function audit({ entity, entityId, action, before, after, actor, ip }) {
   try {
     await prisma.auditLog.create({
       data: {
@@ -17,6 +17,7 @@ export async function audit({ entity, entityId, action, before, after, actor }) 
         before: before ? JSON.parse(JSON.stringify(before)) : null,
         after: after ? JSON.parse(JSON.stringify(after)) : null,
         actor: actor || null,
+        ip: ip || null,
       },
     });
   } catch (err) {
@@ -33,5 +34,6 @@ export async function auditFromReq(req, { entity, entityId, action, before, afte
     before,
     after,
     actor: actorOf(req),
+    ip: req?.ip || null,
   });
 }

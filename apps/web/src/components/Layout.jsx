@@ -168,19 +168,6 @@ export default function Layout({ children }) {
               )}
             </NavLink>
           ))}
-
-          {/* Link externo pra Wiki (container DokuWiki separado, porta 8090) */}
-          <a
-            href={buildWikiUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
-            title="Abre a documentação em nova aba"
-          >
-            <BookOpen size={16} />
-            <span className="flex-1">Wiki</span>
-            <ExternalLink size={11} className="text-slate-400 group-hover:text-slate-500" />
-          </a>
         </nav>
         <div className="p-3 space-y-2">
           <button

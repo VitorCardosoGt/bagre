@@ -37,6 +37,7 @@ export async function registerAuth(app) {
       entityId: user.id,
       action: 'login',
       actor: user.email,
+      ip: req.ip,
     });
     const token = await reply.jwtSign(
       { sub: String(user.id), role: user.role, email: user.email },
@@ -104,6 +105,7 @@ export async function registerAuth(app) {
       entityId: user.id,
       action: 'signup',
       actor: user.email,
+      ip: req.ip,
     });
     const token = await reply.jwtSign(
       { sub: String(user.id), role: user.role, email: user.email },
@@ -146,6 +148,7 @@ export async function registerAuth(app) {
       entityId: user.id,
       action: 'change_password',
       actor: user.email,
+      ip: req.ip,
     });
     return { ok: true };
   });
@@ -200,6 +203,7 @@ export async function registerAuth(app) {
       entityId: rec.userId,
       action: 'reset_password_apply',
       actor: 'self-service',
+      ip: req.ip,
     });
     return { ok: true };
   });

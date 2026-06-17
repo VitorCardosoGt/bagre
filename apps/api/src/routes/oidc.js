@@ -242,6 +242,7 @@ export async function registerOidcRoutes(app) {
       entityId: user.id,
       action: 'login',
       actor: user.email,
+      ip: req.ip,
     });
 
     const token = await reply.jwtSign(
