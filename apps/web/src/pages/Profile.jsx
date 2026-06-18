@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, CheckCircle2, KeyRound, Lock } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 
 export default function Profile() {
   const { user, refresh } = useAuth();
+  const { data: cfg } = useQuery({ queryKey: ['app-config'], queryFn: api.config, staleTime: 60_000 });
+  const isDemo = !!cfg?.demo?.enabled;
   const [params] = useSearchParams();
   const force = params.get('force') === '1';
   const [current, setCurrent] = useState('');
@@ -69,6 +72,18 @@ export default function Profile() {
         </div>
       )}
 
+      {isDemo ? (
+        <div className="card p-5">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Lock size={18} /> Ambiente de demonstração
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            Este é um ambiente público e <strong>somente leitura</strong>. A troca de senha e a
+            gestão de conta ficam desabilitadas para todos os usuários. Os dados são reiniciados
+            diariamente às 04h (BRT).
+          </p>
+        </div>
+      ) : (
       <form onSubmit={submit} className="card p-5 space-y-3">
         <h2 className="font-semibold flex items-center gap-2">
           <KeyRound size={18} /> Trocar senha
@@ -121,6 +136,7 @@ export default function Profile() {
           {loading ? 'Salvando…' : 'Salvar'}
         </button>
       </form>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import cookie from '@fastify/cookie';
 
 import { prisma } from './db.js';
 import { ensureBootstrapAdmin, requireAuth, requireAdmin } from './auth.js';
+import { DEMO } from './demo-guard.js';
 import { registerSites } from './routes/sites.js';
 import { registerSubnets } from './routes/subnets.js';
 import { registerIps } from './routes/ips.js';
@@ -90,6 +91,24 @@ async function build() {
     const url = req.routeOptions?.url || req.url.split('?')[0];
     // Only protect /api/* paths
     if (!url.startsWith('/api/')) return;
+
+    // DEMO_MODE = ambiente público SOMENTE LEITURA. Bloqueia toda escrita
+    // (POST/PUT/PATCH/DELETE) — exceto o login — pra que nenhum visitante,
+    // nem como "admin", crie/altere/remova recursos ou as próprias contas demo.
+    // Cobre rotas públicas-de-escrita (signup/reset/ingest) e autenticadas.
+    // O seed e os syncs rodam in-process (não via HTTP), então não são afetados.
+    if (
+      DEMO &&
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
+      url !== '/api/auth/login'
+    ) {
+      reply.code(403).send({
+        error: 'demo_mode_readonly',
+        detail: 'Ambiente de demonstração é somente leitura.',
+      });
+      return reply;
+    }
+
     if (PUBLIC.has(url)) return;
     // Auth
     try {
