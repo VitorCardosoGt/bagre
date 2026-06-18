@@ -100,6 +100,7 @@ export default function Layout({ children }) {
     staleTime: 60_000,
   });
   const demoBanner = cfg?.demo?.enabled ? cfg.demo.banner : null;
+  const isDemo = !!cfg?.demo?.enabled;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -224,15 +225,17 @@ export default function Layout({ children }) {
                     {user?.role === 'ADMIN' ? 'Administrador' : 'Somente leitura'}
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    navigate('/profile');
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
-                >
-                  <UserIcon size={14} /> Meu perfil
-                </button>
+                {!isDemo && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate('/profile');
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <UserIcon size={14} /> Meu perfil
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     logout();

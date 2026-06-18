@@ -1,6 +1,12 @@
 import { prisma } from '../db.js';
 import { hashPassword, newToken, requireAdmin, requireAuth } from '../auth.js';
 import { auditFromReq } from '../audit.js';
+import { DEMO, demoBlock } from '../demo-guard.js';
+
+// No DEMO_MODE as contas são públicas e compartilhadas — qualquer gestão de
+// usuários (criar/editar/role/remover/reset de senha) é desabilitada pra impedir
+// que um visitante troque a senha ou escale o papel das contas demo (lockout).
+const DEMO_USERS_MSG = 'Gestão de usuários desabilitada no ambiente de demonstração.';
 
 function projectUser(u) {
   return {
@@ -25,6 +31,7 @@ export async function registerUsers(app) {
   // Create user — admin only. If `password` omitted, a reset token is returned
   // so the admin can hand a one-time link to the user.
   app.post('/api/users', { preHandler: requireAdmin }, async (req, reply) => {
+    if (DEMO) return demoBlock(reply, DEMO_USERS_MSG);
     const { email, name, role = 'READER', password } = req.body || {};
     if (!email) {
       reply.code(400);
@@ -77,6 +84,7 @@ export async function registerUsers(app) {
 
   // Patch user — admin only
   app.patch('/api/users/:id', { preHandler: requireAdmin }, async (req, reply) => {
+    if (DEMO) return demoBlock(reply, DEMO_USERS_MSG);
     const id = Number(req.params.id);
     const { name, role, active } = req.body || {};
     const data = {};
@@ -103,6 +111,7 @@ export async function registerUsers(app) {
 
   // Delete user — admin only. Refuse to delete self or last admin.
   app.delete('/api/users/:id', { preHandler: requireAdmin }, async (req, reply) => {
+    if (DEMO) return demoBlock(reply, DEMO_USERS_MSG);
     const id = Number(req.params.id);
     if (id === req.user.id) {
       reply.code(400);
@@ -133,6 +142,7 @@ export async function registerUsers(app) {
   // Force a password reset token for a user — admin only. Returns the token
   // so the admin can hand the link to the user.
   app.post('/api/users/:id/reset', { preHandler: requireAdmin }, async (req, reply) => {
+    if (DEMO) return demoBlock(reply, DEMO_USERS_MSG);
     const id = Number(req.params.id);
     const target = await prisma.user.findUnique({ where: { id } });
     if (!target) {
