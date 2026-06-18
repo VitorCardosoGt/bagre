@@ -2,6 +2,7 @@ import { prisma } from '../db.js';
 import { hashPassword, verifyPassword, newToken, requireAuth } from '../auth.js';
 import { audit } from '../audit.js';
 import { rateLimit } from '../rate-limit.js';
+import { DEMO, demoBlock } from '../demo-guard.js';
 
 const TOKEN_TTL_MIN = 60 * 60 * 8; // 8h
 
@@ -128,6 +129,9 @@ export async function registerAuth(app) {
   });
 
   app.post('/api/auth/change-password', { preHandler: requireAuth }, async (req, reply) => {
+    // No DEMO as contas são fixas e compartilhadas — trocar a senha travaria o
+    // login 1-clique pra todos os próximos visitantes.
+    if (DEMO) return demoBlock(reply, 'Troca de senha desabilitada no ambiente de demonstração.');
     const { currentPassword, newPassword } = req.body || {};
     if (!newPassword || newPassword.length < 8) {
       reply.code(400);
