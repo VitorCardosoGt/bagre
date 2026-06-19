@@ -2,14 +2,14 @@
 
 ## Versões suportadas
 
-O Bagre está em 0.x — apenas a **última release minor** recebe correções de segurança.
+O Bagre está em **1.x**. A **última release** recebe correções de segurança.
 
 | Versão | Suporte |
 |---|---|
-| 0.2.x | ✅ Recebe patches |
-| 0.1.x | ❌ Atualize para 0.2.x |
+| 1.0.x | ✅ Recebe patches de segurança |
+| 0.x | ❌ Atualize para 1.0.x |
 
-A partir da 1.0.0 manteremos uma política de suporte estendido (a definir).
+Conforme novas versões saírem, mantemos sempre a release mais recente com patches. Vulnerabilidades em versões antigas se resolvem atualizando para a última.
 
 ## Reportando uma vulnerabilidade
 
