@@ -25,6 +25,11 @@ services:
       DEMO_DNS_URL: http://powerdns:8081
       DEMO_DNS_KEY: bagre-demo-key
       DEMO_DNS_ZONE: lab.local
+      DEMO_LDAP_URL: ldap://openldap:1389
+      DEMO_LDAP_BIND_DN: cn=admin,dc=corp,dc=local
+      DEMO_LDAP_BIND_PW: adminpw
+      DEMO_LDAP_BASE_DN: dc=corp,dc=local
+      DEMO_LDAP_USER_FILTER: "(cn={username})"
     # demo-seed roda em BACKGROUND pra o servidor subir na hora (evita 502 longo
     # no boot/reset enquanto os syncs rodam). Os syncs populam em paralelo.
     command:
@@ -122,6 +127,25 @@ services:
       - -c
       - "DB=/var/lib/powerdns/pdns.sqlite3; [ -f \"$$DB\" ] || sqlite3 \"$$DB\" < /usr/local/share/doc/pdns/schema.sqlite3.sql; pdnsutil --config-dir=/etc/powerdns create-zone lab.local 2>/dev/null || true; exec pdns_server --config-dir=/etc/powerdns --daemon=no"
     mem_limit: 96m
+    security_opt:
+      - no-new-privileges:true
+
+  # --- OpenLDAP do demo (auth LDAP/AD) — INTERNO, sem porta pública ---
+  # Usuários "AD" de exemplo p/ demonstrar login via LDAP ao vivo. Só o `api`
+  # alcança (rede default). Senhas públicas de propósito (é demo).
+  openldap:
+    image: bitnami/openldap:2.6
+    container_name: bagre-openldap
+    restart: unless-stopped
+    environment:
+      LDAP_ADMIN_USERNAME: admin
+      LDAP_ADMIN_PASSWORD: adminpw
+      LDAP_ROOT: dc=corp,dc=local
+      LDAP_USERS: alice,bob,carol
+      LDAP_PASSWORDS: alicepw,bobpw,carolpw
+      LDAP_USER_DC: people
+      LDAP_GROUP: ipam-users
+    mem_limit: 128m
     security_opt:
       - no-new-privileges:true
 
