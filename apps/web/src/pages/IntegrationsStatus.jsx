@@ -10,6 +10,7 @@ import {
   Settings2,
   Clock,
   Activity,
+  Globe,
   ExternalLink,
 } from 'lucide-react';
 import { api } from '../api.js';
@@ -213,6 +214,39 @@ function OverallBanner({ overall, integrations }) {
   );
 }
 
+// Logos das integrações. Prometheus e OpenID têm logo oficial (paths do
+// simple-icons, marca preservada na cor original). Zabbix e PowerDNS não estão
+// no simple-icons (restrição de marca), então usam um ícone limpo na cor da
+// marca como fallback. O emoji da config vira último fallback.
+const SI_PROMETHEUS =
+  'M12 0C5.373 0 0 5.372 0 12c0 6.627 5.373 12 12 12s12-5.373 12-12c0-6.628-5.373-12-12-12zm0 22.46c-1.885 0-3.414-1.26-3.414-2.814h6.828c0 1.553-1.528 2.813-3.414 2.813zm5.64-3.745H6.36v-2.046h11.28v2.046zm-.04-3.098H6.391c-.037-.043-.075-.086-.111-.13-1.155-1.401-1.427-2.133-1.69-2.879-.005-.025 1.4.287 2.395.511 0 0 .513.119 1.262.255-.72-.843-1.147-1.915-1.147-3.01 0-2.406 1.845-4.508 1.18-6.207.648.053 1.34 1.367 1.387 3.422.689-.951.977-2.69.977-3.755 0-1.103.727-2.385 1.454-2.429-.648 1.069.168 1.984.894 4.256.272.854.237 2.29.447 3.201.07-1.892.395-4.652 1.595-5.605-.529 1.2.079 2.702.494 3.424.671 1.164 1.078 2.047 1.078 3.716a4.642 4.642 0 01-1.11 2.996c.792-.149 1.34-.283 1.34-.283l2.573-.502s-.374 1.538-1.81 3.019z';
+const SI_OPENID =
+  'M14.54.889l-3.63 1.773v18.17c-4.15-.52-7.27-2.78-7.27-5.5 0-2.58 2.8-4.75 6.63-5.41v-2.31C4.42 8.322 0 11.502 0 15.332c0 3.96 4.74 7.24 10.91 7.78l3.63-1.71V.888m.64 6.724v2.31c1.43.25 2.71.7 3.76 1.31l-1.97 1.11 7.03 1.53-.5-5.21-1.87 1.06c-1.74-1.06-3.96-1.81-6.45-2.11z';
+
+function BrandSvg({ path, color }) {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" fill={color} aria-hidden="true">
+      <path d={path} />
+    </svg>
+  );
+}
+
+function IntegrationLogo({ k, fallback }) {
+  switch (k) {
+    case 'prometheus':
+      return <BrandSvg path={SI_PROMETHEUS} color="#E6522C" />;
+    case 'oidc':
+      return <BrandSvg path={SI_OPENID} color="#F78C40" />;
+    case 'zabbix':
+      // Zabbix não está no simple-icons; ícone de monitoramento na cor da marca.
+      return <Activity size={26} strokeWidth={2.4} style={{ color: '#D40000' }} />;
+    case 'dns':
+      return <Globe size={26} strokeWidth={2.2} style={{ color: '#2F6FED' }} />;
+    default:
+      return <span className="text-2xl leading-none">{fallback}</span>;
+  }
+}
+
 function IntegrationCard({ integration, onTest, testing }) {
   const status = statusOf(integration);
   const badge = STATUS_BADGE[status];
@@ -221,7 +255,9 @@ function IntegrationCard({ integration, onTest, testing }) {
   return (
     <article className="card p-5 flex flex-col gap-3">
       <header className="flex items-start gap-3">
-        <div className="text-2xl leading-none">{integration.icon}</div>
+        <div className="flex h-7 w-7 items-center justify-center shrink-0">
+          <IntegrationLogo k={integration.key} fallback={integration.icon} />
+        </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold">{integration.name}</h3>
           <p className="text-xs text-slate-500 mt-0.5">{integration.description}</p>
