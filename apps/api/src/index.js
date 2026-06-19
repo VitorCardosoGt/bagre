@@ -22,6 +22,7 @@ import { registerDevices } from './routes/devices.js';
 import { registerPendingDiscoveries } from './routes/pending-discoveries.js';
 import { registerAuditRoutes } from './routes/audit.js';
 import { registerOidcRoutes } from './routes/oidc.js';
+import { registerLdapRoutes } from './routes/ldap.js';
 import { registerZabbixRoutes } from './routes/zabbix.js';
 import { registerPrometheusRoutes } from './routes/prometheus.js';
 import { registerCidrRoutes } from './routes/cidr.js';
@@ -156,6 +157,7 @@ async function build() {
   await registerPendingDiscoveries(app);
   await registerAuditRoutes(app);
   await registerOidcRoutes(app);
+  await registerLdapRoutes(app);
   await registerZabbixRoutes(app);
   await registerPrometheusRoutes(app);
   await registerCidrRoutes(app);
