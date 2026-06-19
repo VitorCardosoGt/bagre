@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox,
@@ -203,10 +203,12 @@ export default function PendingDiscoveries() {
               const ids = Array.from(selected);
               const subset = discoveries.filter((d) => selected.has(d.id));
               const cidrs = new Set(subset.map((d) => d.suggestedSubnetCidr));
+              const siteCodes = new Set(subset.map((d) => d.suggestedSiteCode).filter(Boolean));
               setApproveModal({
                 open: true,
                 ids,
                 suggested: cidrs.size === 1 ? Array.from(cidrs)[0] : null,
+                suggestedSite: siteCodes.size === 1 ? Array.from(siteCodes)[0] : null,
               });
             }}
             className="btn-primary text-xs py-1.5"
@@ -254,6 +256,10 @@ export default function PendingDiscoveries() {
                           open: true,
                           ids: group.map((d) => d.id),
                           suggested: cidr,
+                          suggestedSite:
+                            new Set(group.map((d) => d.suggestedSiteCode).filter(Boolean)).size === 1
+                              ? group.find((d) => d.suggestedSiteCode)?.suggestedSiteCode || null
+                              : null,
                         });
                       }}
                       className="btn-primary text-xs py-1"
@@ -270,7 +276,12 @@ export default function PendingDiscoveries() {
                 onToggle={toggleSelect}
                 onApprove={(d) => {
                   setErr(null);
-                  setApproveModal({ open: true, ids: [d.id], suggested: d.suggestedSubnetCidr });
+                  setApproveModal({
+                    open: true,
+                    ids: [d.id],
+                    suggested: d.suggestedSubnetCidr,
+                    suggestedSite: d.suggestedSiteCode || null,
+                  });
                 }}
                 onReject={(d) => setRejectModal({ open: true, id: d.id })}
               />
@@ -298,6 +309,7 @@ export default function PendingDiscoveries() {
         open={approveModal.open}
         ids={approveModal.ids}
         suggestedCidr={approveModal.suggested}
+        suggestedSiteCode={approveModal.suggestedSite}
         sites={sites}
         loading={approveMut.isPending || bulkMut.isPending}
         error={err}
@@ -431,24 +443,28 @@ function DiscoveryTable({ rows, canEdit, selected, onToggle, onApprove, onReject
   );
 }
 
-function ApproveModal({ open, ids, suggestedCidr, sites, loading, error, onClose, onSubmit }) {
+function ApproveModal({ open, ids, suggestedCidr, suggestedSiteCode, sites, loading, error, onClose, onSubmit }) {
   const [mode, setMode] = useState('new');
   const [subnetId, setSubnetId] = useState('');
   const [newSubnet, setNewSubnet] = useState({ siteId: '', name: '', cidr: '', vlanId: '' });
 
-  // Reset ao abrir
-  useState(() => {
-    if (open) {
-      setMode(suggestedCidr ? 'new' : 'existing');
-      setSubnetId('');
-      setNewSubnet({
-        siteId: '',
-        name: suggestedCidr ? `Auto · ${suggestedCidr}` : '',
-        cidr: suggestedCidr || '',
-        vlanId: '',
-      });
-    }
-  }, [open, suggestedCidr]);
+  // Pré-preenche o formulário com os dados da descoberta ao ABRIR o modal.
+  // (Tinha que ser useEffect — useState ignora o array de deps e nunca re-rodava,
+  // por isso os campos vinham vazios mesmo com sugestão. Ver issue #46.)
+  useEffect(() => {
+    if (!open) return;
+    const matchSite = suggestedSiteCode
+      ? sites.find((s) => s.code === suggestedSiteCode)
+      : null;
+    setMode(suggestedCidr ? 'new' : 'existing');
+    setSubnetId('');
+    setNewSubnet({
+      siteId: matchSite ? String(matchSite.id) : '',
+      name: suggestedCidr ? `Auto · ${suggestedCidr}` : '',
+      cidr: suggestedCidr || '',
+      vlanId: '',
+    });
+  }, [open, suggestedCidr, suggestedSiteCode, sites]);
 
   // Buscar subnets pra modo "existente"
   const allSubnets = sites.flatMap((s) =>
