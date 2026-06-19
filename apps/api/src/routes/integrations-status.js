@@ -86,9 +86,9 @@ async function oidcStatus() {
   const configured = isOidcConfigured(cfg);
   return {
     key: 'oidc',
-    name: 'Microsoft Entra ID (SSO)',
+    name: 'Login único (SSO)',
     icon: '🔑',
-    description: 'Login corporativo com a conta da empresa — Microsoft Entra ID, Keycloak ou qualquer provedor OIDC.',
+    description: 'Login corporativo via SSO — Microsoft Entra ID, Google, Keycloak ou qualquer provedor OIDC.',
     configured,
     enabled: cfg.enabled,
     lastTest: cfg.lastTestedAt

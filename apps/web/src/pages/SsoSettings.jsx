@@ -235,7 +235,7 @@ export default function SsoSettings() {
             </>
           }
         >
-          <Field label="Redirect URI (cole esta no Entra ID)">
+          <Field label={`Redirect URI (cole esta no ${prov.label})`}>
             <CopyInput value={form.redirectUri} />
             <input
               value={form.redirectUri}
