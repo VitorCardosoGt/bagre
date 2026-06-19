@@ -14,8 +14,54 @@ import { api } from '../api.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { useToast } from '../components/Toast.jsx';
 
-const HELP_LINK =
-  'https://learn.microsoft.com/azure/active-directory/develop/quickstart-register-app';
+// Presets de provedor — o backend é OIDC genérico (discovery), então qualquer
+// provedor OIDC funciona; estes presets só facilitam o preenchimento.
+const PROVIDERS = {
+  microsoft: {
+    label: 'Microsoft Entra ID',
+    buttonLabel: 'Entrar com Microsoft',
+    scopes: 'openid profile email',
+    issuerFixed: null,
+    issuerPlaceholder: 'https://login.microsoftonline.com/<tenant>/v2.0',
+    issuerHint: 'Para Entra ID: https://login.microsoftonline.com/{TENANT_ID}/v2.0',
+    setupTitle: '1. Crie um App Registration no Microsoft Entra ID',
+    setupHelp: 'https://learn.microsoft.com/azure/active-directory/develop/quickstart-register-app',
+    setupText:
+      'No portal Azure → Microsoft Entra ID → App registrations → "New registration". Cole o Redirect URI abaixo, depois copie os IDs e gere um Client Secret.',
+  },
+  google: {
+    label: 'Google',
+    buttonLabel: 'Entrar com Google',
+    scopes: 'openid profile email',
+    issuerFixed: 'https://accounts.google.com',
+    issuerPlaceholder: 'https://accounts.google.com',
+    issuerHint: 'Google usa sempre: https://accounts.google.com (preenchido automaticamente).',
+    setupTitle: '1. Crie um OAuth Client ID no Google Cloud Console',
+    setupHelp: 'https://console.cloud.google.com/apis/credentials',
+    setupText:
+      'No Google Cloud Console → APIs & Services → Credentials → "Create Credentials" → "OAuth client ID" → Web application. Em "Authorized redirect URIs" cole o Redirect URI abaixo. Copie o Client ID e o Client Secret.',
+  },
+  other: {
+    label: 'Outro (OIDC)',
+    buttonLabel: 'Entrar com SSO',
+    scopes: 'openid profile email',
+    issuerFixed: null,
+    issuerPlaceholder: 'https://seu-provedor/.../',
+    issuerHint: 'URL do issuer OIDC (o que expõe /.well-known/openid-configuration).',
+    setupTitle: '1. Registre uma aplicação no seu provedor OIDC',
+    setupHelp: null,
+    setupText:
+      'Crie um client OIDC (Keycloak, Okta, Auth0, Authentik…). Use o Redirect URI abaixo, e pegue issuer, client id e secret.',
+  },
+};
+
+function detectProvider(issuerUrl) {
+  const u = (issuerUrl || '').toLowerCase();
+  if (u.includes('accounts.google.com')) return 'google';
+  if (u.includes('microsoftonline.com') || u.includes('sts.windows.net')) return 'microsoft';
+  if (!u) return 'microsoft';
+  return 'other';
+}
 
 export default function SsoSettings() {
   const qc = useQueryClient();
@@ -26,9 +72,11 @@ export default function SsoSettings() {
   });
   const [form, setForm] = useState(null);
   const [groupsCsv, setGroupsCsv] = useState('');
+  const [provider, setProvider] = useState('microsoft');
 
   useEffect(() => {
     if (cfg && !form) {
+      setProvider(detectProvider(cfg.issuerUrl));
       setForm({
         enabled: cfg.enabled,
         buttonLabel: cfg.buttonLabel || 'Entrar com Microsoft',
@@ -82,9 +130,22 @@ export default function SsoSettings() {
     onError: (e) => toast.error(e.message),
   });
 
+  function applyPreset(key) {
+    const p = PROVIDERS[key];
+    setProvider(key);
+    setForm((f) => {
+      let issuerUrl = f.issuerUrl;
+      if (p.issuerFixed) issuerUrl = p.issuerFixed;
+      else if (f.issuerUrl === PROVIDERS.google.issuerFixed) issuerUrl = '';
+      return { ...f, buttonLabel: p.buttonLabel, scopes: p.scopes, issuerUrl };
+    });
+  }
+
   if (isLoading || !form) {
     return <p className="text-slate-500">Carregando…</p>;
   }
+
+  const prov = PROVIDERS[provider] || PROVIDERS.other;
 
   const submit = (e) => {
     e.preventDefault();
@@ -114,8 +175,8 @@ export default function SsoSettings() {
   return (
     <div className="max-w-3xl space-y-5">
       <PageHeader
-        title="SSO / Microsoft Entra ID"
-        description="Permita que usuários entrem com a conta corporativa (Azure AD / Entra ID). O login local continua funcionando em paralelo — perfeito para evitar lockout caso o IdP fique fora do ar."
+        title="SSO (OIDC)"
+        description="Permita que usuários entrem com a conta corporativa via SSO — Microsoft Entra ID, Google ou qualquer provedor OIDC. O login local continua funcionando em paralelo, evitando lockout caso o IdP fique fora do ar."
         actions={
           <button
             onClick={() => enable.mutate()}
@@ -131,22 +192,46 @@ export default function SsoSettings() {
 
       <StatusBanner cfg={cfg} fullyConfigured={fullyConfigured} />
 
+      <section className="card p-5">
+        <h2 className="font-semibold">Provedor de identidade</h2>
+        <p className="text-xs text-slate-500 mt-1">
+          Escolha o provedor para preencher automaticamente issuer, scopes e o texto do botão.
+          Qualquer provedor compatível com OIDC funciona.
+        </p>
+        <div className="mt-3 inline-flex flex-wrap gap-2">
+          {Object.entries(PROVIDERS).map(([key, p]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => applyPreset(key)}
+              className={`text-sm px-3 py-1.5 rounded-lg border transition ${
+                provider === key
+                  ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                  : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <form onSubmit={submit} className="space-y-5">
         <Section
-          title="1. Crie um App Registration no Microsoft Entra ID"
+          title={prov.setupTitle}
           subtitle={
             <>
-              No portal Azure → Microsoft Entra ID → App registrations → "New
-              registration". Em "Redirect URI" cole o valor abaixo. Depois copie
-              os IDs e gere um Client Secret.{' '}
-              <a
-                href={HELP_LINK}
-                target="_blank"
-                rel="noreferrer"
-                className="text-brand-600 hover:underline inline-flex items-center gap-1"
-              >
-                guia oficial <ExternalLink size={12} />
-              </a>
+              {prov.setupText}{' '}
+              {prov.setupHelp && (
+                <a
+                  href={prov.setupHelp}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-600 hover:underline inline-flex items-center gap-1"
+                >
+                  guia oficial <ExternalLink size={12} />
+                </a>
+              )}
             </>
           }
         >
@@ -160,17 +245,15 @@ export default function SsoSettings() {
           </Field>
         </Section>
 
-        <Section title="2. Cole os dados do Entra ID aqui">
-          <Field
-            label="Issuer URL"
-            hint="Para Entra ID: https://login.microsoftonline.com/{TENANT_ID}/v2.0"
-          >
+        <Section title={`2. Cole os dados do ${prov.label}`}>
+          <Field label="Issuer URL" hint={prov.issuerHint}>
             <input
               required
               value={form.issuerUrl}
               onChange={(e) => setForm({ ...form, issuerUrl: e.target.value })}
-              placeholder="https://login.microsoftonline.com/<tenant>/v2.0"
-              className="input font-mono text-xs"
+              placeholder={prov.issuerPlaceholder}
+              readOnly={Boolean(prov.issuerFixed)}
+              className={`input font-mono text-xs ${prov.issuerFixed ? 'bg-slate-50 dark:bg-slate-800/50' : ''}`}
             />
           </Field>
           <Field label="Application (client) ID">
