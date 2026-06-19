@@ -1,0 +1,30 @@
+dn: ou=people,dc=corp,dc=local
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=corp,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+dn: cn=alice,ou=people,dc=corp,dc=local
+objectClass: inetOrgPerson
+cn: alice
+sn: Anderson
+uid: alice
+mail: alice@corp.local
+displayName: Alice Anderson (TI)
+userPassword: alicepw
+
+dn: cn=bob,ou=people,dc=corp,dc=local
+objectClass: inetOrgPerson
+cn: bob
+sn: Brown
+uid: bob
+mail: bob@corp.local
+displayName: Bob Brown
+userPassword: bobpw
+
+dn: cn=ipam-admins,ou=groups,dc=corp,dc=local
+objectClass: groupOfNames
+cn: ipam-admins
+member: cn=alice,ou=people,dc=corp,dc=local
