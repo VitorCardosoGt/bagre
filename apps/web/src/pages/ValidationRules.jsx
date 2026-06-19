@@ -9,26 +9,30 @@ import { useToast } from '../components/Toast.jsx';
 
 const RULE_TYPE_INFO = {
   'no-overlap': {
-    label: 'No overlap',
-    description: 'Subnet nova não pode sobrepor outra cadastrada',
+    label: 'Sem sobreposição',
+    description: 'Impede cadastrar uma subnet que se sobrepõe a outra já existente.',
+    example: 'Bloqueia criar 10.0.1.0/24 se já existe 10.0.0.0/16. Evita conflito de CIDR — a dor de cabeça nº1.',
     configHint: '{ "scope": "site" | "global" }',
     defaultConfig: { scope: 'site' },
   },
   'within-master': {
-    label: 'Within master',
-    description: 'Subnet precisa estar contida em pelo menos um Master Range',
+    label: 'Dentro de um range mestre',
+    description: 'Exige que a subnet esteja contida em um Master Range aprovado (cadastrado em Catálogos).',
+    example: 'Só permite subnets dentro de 10.0.0.0/8 — barra um 192.168.x criado por engano.',
     configHint: '{ "allowedCategories": ["..."] } (opcional)',
     defaultConfig: {},
   },
   'size-range': {
-    label: 'Size range',
-    description: 'Limita prefix length permitido',
+    label: 'Tamanho permitido',
+    description: 'Limita o tamanho (prefixo) da subnet a uma faixa mínima e máxima.',
+    example: 'minPrefix 16 / maxPrefix 30 → barra um /8 gigante ou um /31 minúsculo demais.',
     configHint: '{ "minPrefix": 16, "maxPrefix": 30 }',
     defaultConfig: { minPrefix: 16, maxPrefix: 30 },
   },
   'name-pattern': {
-    label: 'Name pattern',
-    description: 'Nome da subnet bate com regex',
+    label: 'Padrão de nome',
+    description: 'Exige que o nome da subnet siga um padrão (regex) — força convenção de nomenclatura.',
+    example: 'Padrão ^(prod|dev|hml)- → aceita "prod-web", rejeita "minha rede".',
     configHint: '{ "pattern": "^(prod|dev|hml)-" }',
     defaultConfig: { pattern: '^[a-z]+-[a-z0-9-]+$' },
   },
@@ -59,6 +63,23 @@ export default function ValidationRules() {
         }
       />
 
+      <div className="card p-4 mb-4 bg-slate-50/60 dark:bg-slate-800/30 border-slate-200">
+        <div className="flex items-start gap-3">
+          <Shield size={18} className="text-brand-500 mt-0.5 shrink-0" />
+          <div className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
+            <p>
+              <strong>Como funciona:</strong> toda vez que alguém cria ou edita uma subnet, o Bagre
+              roda as regras ativas antes de salvar.
+            </p>
+            <p>
+              <span className="font-medium text-rose-600">Erro</span> = bloqueia a operação ·{' '}
+              <span className="font-medium text-amber-600">Warning</span> = só avisa e deixa seguir.
+              Cada regra pode valer <strong>globalmente</strong> ou só em <strong>sites específicos</strong> (escopo).
+            </p>
+          </div>
+        </div>
+      </div>
+
       {isLoading && <div className="text-sm text-slate-500">Carregando…</div>}
 
       {!isLoading && rules.length === 0 && (
@@ -71,6 +92,19 @@ export default function ValidationRules() {
           <button onClick={() => setModal({ open: true, rule: null })} className="btn-primary inline-flex items-center gap-1.5">
             <Plus size={14} /> Adicionar primeira regra
           </button>
+
+          <div className="mt-8 text-left max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tipos de regra disponíveis</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {Object.entries(RULE_TYPE_INFO).map(([k, v]) => (
+                <div key={k} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="font-medium text-sm">{v.label}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{v.description}</div>
+                  <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 italic">Ex: {v.example}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -216,6 +250,11 @@ function RuleFormModal({ open, rule, onClose, onSubmit, loading }) {
               </button>
             ))}
           </div>
+          {info?.example && (
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-2 bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-900/40 rounded px-2.5 py-1.5">
+              💡 <span className="italic">{info.example}</span>
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
