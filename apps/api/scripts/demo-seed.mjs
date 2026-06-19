@@ -35,6 +35,14 @@ const DNS_URL = process.env.DEMO_DNS_URL || 'http://powerdns:8081';
 const DNS_KEY = process.env.DEMO_DNS_KEY || 'bagre-demo-key';
 const DNS_ZONE = process.env.DEMO_DNS_ZONE || 'lab.local';
 
+// LDAP/AD do demo — aponta pro OpenLDAP in-stack (interno, sem porta pública).
+const LDAP_URL = process.env.DEMO_LDAP_URL || 'ldap://openldap:1389';
+const LDAP_BIND_DN = process.env.DEMO_LDAP_BIND_DN || 'cn=admin,dc=corp,dc=local';
+const LDAP_BIND_PW = process.env.DEMO_LDAP_BIND_PW || 'adminpw';
+const LDAP_BASE_DN = process.env.DEMO_LDAP_BASE_DN || 'dc=corp,dc=local';
+const LDAP_USER_FILTER = process.env.DEMO_LDAP_USER_FILTER || '(cn={username})';
+const LDAP_ADMIN_GROUP = process.env.DEMO_LDAP_ADMIN_GROUP || '';
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function upsertDemoUser(email, password, role) {
@@ -144,6 +152,25 @@ async function wireDns() {
     update: { enabled: true, provider: 'powerdns', baseUrl: DNS_URL, apiKey: DNS_KEY, serverId: 'localhost', defaultZone: DNS_ZONE },
   });
   console.log(`[demo-seed] DNS (PowerDNS) fixado em ${DNS_URL} · zona ${DNS_ZONE}`);
+}
+
+async function wireLdap() {
+  await prisma.ldapConfig.upsert({
+    where: { id: 1 },
+    create: {
+      id: 1, enabled: true, url: LDAP_URL, bindDn: LDAP_BIND_DN, bindPassword: LDAP_BIND_PW,
+      baseDn: LDAP_BASE_DN, userFilter: LDAP_USER_FILTER,
+      emailAttr: 'mail', nameAttr: 'cn', groupAttr: 'memberOf',
+      adminGroups: LDAP_ADMIN_GROUP ? [LDAP_ADMIN_GROUP] : [],
+      autoProvision: true, defaultRole: 'READER',
+    },
+    update: {
+      enabled: true, url: LDAP_URL, bindDn: LDAP_BIND_DN, bindPassword: LDAP_BIND_PW,
+      baseDn: LDAP_BASE_DN, userFilter: LDAP_USER_FILTER,
+      adminGroups: LDAP_ADMIN_GROUP ? [LDAP_ADMIN_GROUP] : [],
+    },
+  });
+  console.log(`[demo-seed] LDAP/AD fixado em ${LDAP_URL} · base ${LDAP_BASE_DN}`);
 }
 
 async function initialDnsSync() {
@@ -282,6 +309,7 @@ async function main() {
   await wireZabbix();
   await wirePrometheus();
   await wireDns();
+  await wireLdap();
   await initialZabbixSync();
   await initialPrometheusSync();
   await initialDnsSync();

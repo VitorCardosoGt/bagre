@@ -3,6 +3,7 @@ import { hashPassword, verifyPassword, newToken, requireAuth } from '../auth.js'
 import { audit } from '../audit.js';
 import { rateLimit } from '../rate-limit.js';
 import { DEMO, demoBlock } from '../demo-guard.js';
+import * as ldapProvider from '../auth-providers/ldap.js';
 
 const TOKEN_TTL_MIN = 60 * 60 * 8; // 8h
 
@@ -13,47 +14,94 @@ const signupLimit = rateLimit({ name: 'signup', windowMs: 5 * 60_000, max: 20 })
 const resetLimit = rateLimit({ name: 'reset', windowMs: 5 * 60_000, max: 20 });
 
 export async function registerAuth(app) {
-  app.post('/api/auth/login', { preHandler: loginLimit }, async (req, reply) => {
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      reply.code(400);
-      return { error: 'email e password obrigatórios' };
-    }
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    if (!user || !user.active) {
-      reply.code(401);
-      return { error: 'credenciais inválidas' };
-    }
-    const ok = await verifyPassword(password, user.passwordHash);
-    if (!ok) {
-      reply.code(401);
-      return { error: 'credenciais inválidas' };
-    }
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-    await audit({
-      entity: 'user',
-      entityId: user.id,
-      action: 'login',
-      actor: user.email,
-      ip: req.ip,
-    });
+  // Emite o token + audita + atualiza lastLoginAt. Reusado por login local e LDAP.
+  async function issueLogin(reply, user, ip, via = 'local') {
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    await audit({ entity: 'user', entityId: user.id, action: 'login', actor: `${user.email} (${via})`, ip });
     const token = await reply.jwtSign(
       { sub: String(user.id), role: user.role, email: user.email },
       { expiresIn: TOKEN_TTL_MIN },
     );
     return {
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        mustChangePwd: user.mustChangePwd,
-      },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePwd: user.mustChangePwd },
     };
+  }
+
+  // Provisiona/atualiza o usuário local a partir de um login LDAP bem-sucedido.
+  async function provisionLdapUser(cfg, result) {
+    let user =
+      (await prisma.user.findUnique({ where: { externalId: result.dn } })) ||
+      (await prisma.user.findUnique({ where: { email: result.email } }));
+    if (!user) {
+      if (!cfg.autoProvision) return null;
+      user = await prisma.user.create({
+        data: {
+          email: result.email,
+          name: result.name,
+          authProvider: 'ldap',
+          externalId: result.dn,
+          externalGroups: result.groups,
+          role: result.role,
+          active: true,
+        },
+      });
+      await audit({ entity: 'user', entityId: user.id, action: 'create', actor: 'ldap', after: { email: user.email, role: user.role, authProvider: 'ldap' } });
+      return user;
+    }
+    return prisma.user.update({
+      where: { id: user.id },
+      data: {
+        authProvider: 'ldap',
+        externalId: result.dn,
+        externalGroups: result.groups,
+        name: user.name || result.name,
+        // só sobrescreve o papel se há adminGroups configurados; senão o admin gerencia manual.
+        role: cfg.adminGroups?.length ? result.role : user.role,
+      },
+    });
+  }
+
+  app.post('/api/auth/login', { preHandler: loginLimit }, async (req, reply) => {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      reply.code(400);
+      return { error: 'email e password obrigatórios' };
+    }
+
+    // 1) Autenticação LOCAL — só se o usuário tem senha local.
+    const localUser = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
+    if (localUser && localUser.active && localUser.passwordHash) {
+      const ok = await verifyPassword(password, localUser.passwordHash);
+      if (ok) return issueLogin(reply, localUser, req.ip, 'local');
+    }
+
+    // 2) Autenticação LDAP/AD — se habilitada. O campo "email" é tratado como
+    //    username (ex.: sAMAccountName) e passado ao filtro do AD.
+    try {
+      const ldapCfg = await ldapProvider.getConfig();
+      if (ldapCfg.enabled && ldapProvider.isConfigured(ldapCfg)) {
+        const result = await ldapProvider.authenticate(ldapCfg, email, password);
+        if (result) {
+          const user = await provisionLdapUser(ldapCfg, result);
+          if (!user) {
+            reply.code(403);
+            return { error: 'Usuário válido no AD, mas provisionamento automático está desligado.' };
+          }
+          if (!user.active) {
+            reply.code(403);
+            return { error: 'Conta inativa' };
+          }
+          return issueLogin(reply, user, req.ip, 'ldap');
+        }
+      }
+    } catch (err) {
+      req.log.warn({ err: err.message }, 'erro na autenticação LDAP');
+      // cai pro 401 abaixo — não vaza detalhe do erro pro cliente.
+    }
+
+    reply.code(401);
+    return { error: 'credenciais inválidas' };
   });
 
   app.post('/api/auth/signup', { preHandler: signupLimit }, async (req, reply) => {
