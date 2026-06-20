@@ -93,6 +93,40 @@ export default function Login() {
               <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
                 Os dados são reiniciados diariamente às 04h (BRT).
               </p>
+
+              <div className="pt-2.5 mt-1 border-t border-amber-200/70 dark:border-amber-800/60 space-y-2">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                  Ou entre com uma conta de domínio (AD/LDAP):
+                </p>
+                <input
+                  type="text"
+                  placeholder="usuário (ex: alice)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input"
+                  autoComplete="username"
+                />
+                <input
+                  type="password"
+                  placeholder="senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn w-full justify-center py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-100 font-medium"
+                >
+                  <LogIn size={15} />
+                  {loading ? 'Entrando…' : 'Entrar com AD'}
+                </button>
+                <p className="text-[11px] leading-relaxed text-amber-700/80 dark:text-amber-300/80">
+                  Contas de teste: <strong>alice / alicepw</strong> (vira ADMIN pelo grupo
+                  <code className="mx-0.5">ipam-admins</code>) · <strong>bob / bobpw</strong> (leitor).
+                </p>
+              </div>
             </div>
           )}
 
