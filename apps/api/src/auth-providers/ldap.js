@@ -33,14 +33,15 @@ function escapeFilter(value) {
 }
 
 function makeClient(cfg) {
-  return new Client({
-    url: cfg.url,
-    timeout: 8000,
-    connectTimeout: 8000,
-    // cert validado por padrão. Para AD com CA interna, será preciso fornecer a CA
-    // (config futura). Não desligar a validação sem necessidade.
-    tlsOptions: { rejectUnauthorized: true },
-  });
+  const opts = { url: cfg.url, timeout: 8000, connectTimeout: 8000 };
+  // tlsOptions SÓ pra ldaps:// — passar em ldap:// faz o ldapts tentar um
+  // handshake TLS que o servidor recusa ("socket disconnected before TLS").
+  // No StartTLS o cert é validado no client.startTLS() (ver withClient).
+  // Cert validado por padrão; AD com CA interna precisará fornecer a CA (futuro).
+  if ((cfg.url || '').startsWith('ldaps://')) {
+    opts.tlsOptions = { rejectUnauthorized: true };
+  }
+  return new Client(opts);
 }
 
 async function withClient(cfg, fn) {
